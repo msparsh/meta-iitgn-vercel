@@ -22,5 +22,74 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
 }
+
+/* Typography System mapping for global consistency */
+.font-sans {
+  font-family: var(--font-geist-sans), sans-serif !important;
+}
+
+.font-serif {
+  font-family: var(--font-lora), Georgia, serif !important;
+}
+
+.font-display {
+  font-family: var(--font-playfair), Georgia, serif !important;
+}
+
+/* Eliminate empty space and padding inside milkdown editor */
+.milkdown-container .milkdown,
+.milkdown-container .editor,
+.milkdown-container .crepe {
+  padding-top: 0px !important;
+  margin-top: 0px !important;
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+}
+
+.milkdown-container .prose > :first-child,
+.milkdown-container [contenteditable] > :first-child {
+  margin-top: 0px !important;
+}
+
+/* Prevent toolbar from wrapping to a second row during the width transition */
+.milkdown-top-bar,
+.top-bar-inner {
+  flex-wrap: nowrap !important;
+}
+
+/* Restore clean blending in the header (transparent background & borderless) */
+#editor-toolbar-portal .milkdown-top-bar {
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+/* Make toolbar icons and heading selector darker and more legible */
+.milkdown .milkdown-top-bar .top-bar-item svg,
+.milkdown .milkdown-top-bar .top-bar-heading-button,
+.milkdown .milkdown-top-bar .top-bar-heading-button .top-bar-heading-label,
+.milkdown .milkdown-toolbar .toolbar-item svg {
+  color: #374151 !important; /* Dark gray */
+  fill: #374151 !important;
+}
+
+/* Ensure active/toggled icons retain high-contrast Indigo */
+.milkdown .milkdown-top-bar .top-bar-item.active svg,
+.milkdown .milkdown-toolbar .toolbar-item.active svg {
+  color: #4f46e5 !important;
+  fill: #4f46e5 !important;
+}
+
+/* High-contrast premium text shadow to maintain legibility on colorful backdrops */
+.text-shadow-premium {
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.65), 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+}
+
+
+
+
+
+
+
+
