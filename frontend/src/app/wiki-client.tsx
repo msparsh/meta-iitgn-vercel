@@ -5,9 +5,7 @@ import dynamic from "next/dynamic";
 import NextLink from "next/link";
 import { parseMarkdown, stringifyMarkdown } from "@/lib/utils";
 import { InfoboxData } from "@/lib/types";
-import { TIERS } from "@/lib/constants";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+
 import { EditableCell } from "@/components/article/editable-cell";
 import {
   Share2,
@@ -19,7 +17,6 @@ import {
   Tag,
   History,
   Trash2,
-  PlusCircle,
   PanelRight,
   Home
 } from "lucide-react";
@@ -31,11 +28,11 @@ const MilkdownEditor = dynamic(() => import("@/components/article/milkdown-edito
 
 interface WikiClientProps {
   initialMarkdown: string;
+  defaultEditing?: boolean;
 }
 
-export default function WikiClient({ initialMarkdown }: WikiClientProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Collapsed by default
+export default function WikiClient({ initialMarkdown, defaultEditing }: WikiClientProps) {
+  const [isEditing, setIsEditing] = useState(defaultEditing || false);
   const [markdown, setMarkdown] = useState(initialMarkdown);
   const parsed = useMemo(() => parseMarkdown(markdown), [markdown]);
   const [activeSection, setActiveSection] = useState<string>("");
@@ -45,7 +42,6 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
 
   const [rightWidth, setRightWidth] = useState(320);
-  const [currentTier, setCurrentTier] = useState<keyof typeof TIERS>("gold");
 
   useEffect(() => {
     const savedRight = localStorage.getItem("wiki-right-sidebar-width");
@@ -158,12 +154,6 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
     setIsEditing(false);
   };
 
-  const handleNewArticle = () => {
-    const template = "# Untitled Page\n\nWrite your content here...";
-    markdownRef.current = template;
-    setMarkdown(template);
-    setIsEditing(true);
-  };
 
   // Add IDs to headings dynamically when content changes or is loaded
   useEffect(() => {
@@ -245,18 +235,7 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
 
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-gray-50/30 overflow-hidden font-sans">
-      {/* Top Header Bar */}
-      <Navbar 
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-        currentTier={currentTier}
-        onChangeTier={(tier) => setCurrentTier(tier as keyof typeof TIERS)}
-      />
-
-      {/* Main Content Workspace */}
-      <div className="flex flex-1 overflow-hidden w-full relative">
-        {/* Left Collapsible Sidebar */}
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <>
 
         {/* Main Scrollable Article Body */}
         <main className="flex-1 px-4 md:px-8 lg:px-12 pt-8 pb-24 overflow-y-auto bg-[#FCFCFD] relative scroll-smooth">
@@ -268,6 +247,7 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
                 Wiki Page
               </div>
               <div className="flex items-center gap-2">
+                <div className="hidden md:flex">
                 {isEditing ? (
                   <>
                     <button
@@ -295,14 +275,9 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
                     >
                       <Edit3 className="h-4 w-4" /> Edit Page
                     </button>
-                    <button
-                      onClick={handleNewArticle}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold text-xs cursor-pointer transition-colors border border-gray-200 shadow-sm"
-                    >
-                      <PlusCircle className="h-4 w-4 text-gray-500" /> New Article
-                    </button>
                   </>
                 )}
+                </div>
                 
                 <div className="h-6 w-px bg-gray-250 mx-1" />
                 
@@ -325,7 +300,7 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
             {isEditing && (
               <div 
                 ref={setToolbarContainer} 
-                className="border border-gray-150 rounded-xl bg-gray-50 p-1.5 mb-6 milkdown flex items-center justify-center min-h-[40px]"
+                className="border border-gray-150 rounded-xl bg-gray-50 p-1.5 mb-6 milkdown flex items-center justify-center min-h-10"
               />
             )}
             {/* Title Header (Separated from editor to prevent accidental deletion) */}
@@ -357,7 +332,7 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
         <div
           onMouseDown={startResizeRight}
           onDoubleClick={handleRightDoubleClick}
-          className="hidden lg:block w-1.5 -mr-1 cursor-col-resize hover:bg-indigo-500/30 active:bg-indigo-500/50 transition-colors z-20 h-full flex-shrink-0"
+          className="hidden lg:block w-1.5 -mr-1 cursor-col-resize hover:bg-indigo-500/30 active:bg-indigo-500/50 transition-colors z-20 h-full shrink-0"
           title="Drag to resize, double-click to reset"
         />
         {/* Mobile Backdrop for Right Sidebar */}
@@ -717,14 +692,6 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
                 <span>Edit</span>
               </button>
 
-              {/* Button 3: New Article */}
-              <button
-                onClick={handleNewArticle}
-                className="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-indigo-655 transition-colors cursor-pointer"
-              >
-                <PlusCircle className="h-5 w-5" />
-                <span>New Page</span>
-              </button>
 
               {/* Button 4: Sidebar Toggle */}
               <button
@@ -739,7 +706,6 @@ export default function WikiClient({ initialMarkdown }: WikiClientProps) {
             </>
           )}
         </div>
-      </div>
-    </div>
-  );
+      </>
+    );
 }

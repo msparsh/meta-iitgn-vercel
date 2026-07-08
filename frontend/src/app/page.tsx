@@ -19,6 +19,7 @@ import {
   History,
   HelpCircle,
   LucideIcon,
+  Heart,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
@@ -35,6 +36,36 @@ export default function HomePage() {
       router.push(`/wiki?search=${encodeURIComponent(searchQuery.trim())}`);
     } else {
       router.push("/wiki");
+    }
+  };
+
+  const spawnHearts = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    for (let i = 0; i < 8; i++) {
+      const heart = document.createElement("div");
+      heart.innerText = "❤️";
+      heart.style.position = "fixed";
+      heart.style.left = `${rect.left + rect.width / 2}px`;
+      heart.style.top = `${rect.top + rect.height / 2}px`;
+      heart.style.pointerEvents = "none";
+      heart.style.fontSize = `${Math.random() * 12 + 12}px`;
+      heart.style.zIndex = "9999";
+      heart.style.transition = "all 0.8s cubic-bezier(0.25, 1, 0.5, 1)";
+      
+      const angle = (Math.random() * Math.PI) - Math.PI; // Upward fountain
+      const velocity = Math.random() * 80 + 50;
+      const x = Math.cos(angle) * velocity;
+      const y = Math.sin(angle) * velocity - 30; // Extra upward float
+
+      document.body.appendChild(heart);
+      heart.getBoundingClientRect();
+
+      heart.style.transform = `translate(${x}px, ${y}px) scale(0)`;
+      heart.style.opacity = "0";
+
+      setTimeout(() => {
+        heart.remove();
+      }, 800);
     }
   };
 
@@ -72,7 +103,7 @@ export default function HomePage() {
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
       {/* Main Container */}
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 relative overflow-hidden overflow-y-auto">
         {/* Collapsible Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -218,6 +249,20 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </div>
+          {/* Credits */}
+          <div className="text-xs text-gray-400 font-medium font-sans flex  justify-center items-center gap-2 pt-4 border-t border-gray-100">
+            <span>Made with</span>
+            <Heart 
+              onClick={spawnHearts}
+              className="w-5 h-5 text-red-500 fill-red-500 my-0.5 cursor-pointer hover:scale-130 transition-transform duration-200" 
+            />
+            <span>by <span className="font-semibold text-gray-600">Technical Council, IITGN</span></span>
+          </div>
+
+          {/* Footer info */}
+          <div className="text-[10px] text-gray-400 font-medium pt-2 border-t border-gray-100">
+            © {new Date().getFullYear()} meta IITGN · Technical Council IITGN
           </div>
         </main>
       </div>

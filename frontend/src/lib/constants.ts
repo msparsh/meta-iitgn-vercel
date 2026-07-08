@@ -242,8 +242,8 @@ export const QUICK_PORTALS: QuickPortalItem[] = [
 ];
 
 export const PROFILE_MENU_ITEMS = [
-  { name: "My Profile", path: "/wiki/profile" },
-  { name: "My Contributions", path: "/wiki/contributions" },
-  { name: "Settings", path: "/wiki/settings" },
-  { name: "Sign Out", path: "/wiki/signout", isDanger: true },
+  { name: "My Profile", path: "/user/profile" },
+  { name: "My Contributions", path: "/user/contributions" },
+  { name: "Settings", path: "/user/settings" },
+  { name: "Sign Out", path: "/user/signout", isDanger: true },
 ];

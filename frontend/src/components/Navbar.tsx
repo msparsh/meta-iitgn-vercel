@@ -3,7 +3,16 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, Search, ChevronDown, Check, User, Settings, LogOut, FileText } from "lucide-react";
+import {
+  Menu,
+  Search,
+  ChevronDown,
+  Check,
+  User,
+  Settings,
+  LogOut,
+  FileText,
+} from "lucide-react";
 import { PROFILE_MENU_ITEMS, TIERS } from "@/lib/constants";
 
 interface NavbarProps {
@@ -12,7 +21,11 @@ interface NavbarProps {
   onChangeTier?: (tier: string) => void;
 }
 
-export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: NavbarProps) {
+export default function Navbar({
+  onToggleSidebar,
+  currentTier,
+  onChangeTier,
+}: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [localTier, setLocalTier] = useState("gold");
@@ -25,7 +38,10 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     }
@@ -60,7 +76,7 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
   return (
     <header className="h-16 border-b border-gray-150 flex items-center justify-between px-4 lg:px-6 shrink-0 bg-white sticky top-0 z-40 select-none">
       {/* Left side: Hamburger and Logo */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <button
           onClick={onToggleSidebar}
           className="p-2 hover:bg-gray-150 rounded-lg text-gray-600 transition-colors duration-200 cursor-pointer active:scale-95"
@@ -69,24 +85,30 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
           <Menu className="h-6 w-6" />
         </button>
 
-        <Link href="/" className="flex items-center gap-2 select-none cursor-pointer group">
+        <Link
+          href="/"
+          className="flex items-center gap-2 select-none cursor-pointer group"
+        >
           {/* Blue logo container */}
-          <div className="w-12 h-12  text-white bg-blue-400 rounded-full flex items-center justify-center font-display font-black text-2xl  cursor-pointer hover:scale-115 transition-transform duration-300">
+          <div className="w-12 h-12 hidden sm:flex text-white bg-blue-400 rounded-full  items-center justify-center font-display font-black text-2xl  cursor-pointer hover:scale-115 transition-transform duration-300">
             mI
           </div>
-          <div className="hidden sm:block">
-              <span className="font-serif text-2xl font-extrabold tracking-tight  text-blue-500">
-                META
-              </span>
-              <span className="ml-1 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                IITGN
-              </span>
-            </div>
+          <div className="block">
+            <span className="font-serif text-2xl font-extrabold tracking-tight  text-blue-500">
+              META
+            </span>
+            <span className="ml-1 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              IITGN
+            </span>
+          </div>
         </Link>
       </div>
 
       {/* Middle: Search input */}
-      <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-lg mx-8 relative items-center">
+      <form
+        onSubmit={handleSearchSubmit}
+        className="hidden md:flex flex-1 max-w-lg mx-8 relative items-center"
+      >
         <div className="relative w-full flex items-center h-10 bg-gray-50 border border-gray-200 hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100/50 rounded-full px-4 transition-all duration-200 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.03)]">
           <input
             type="text"
@@ -118,19 +140,28 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
           <span className="text-sm font-semibold text-gray-700 hidden sm:inline">
             System
           </span>
-          <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown
+            className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+          />
         </button>
 
         {/* Dropdown Menu (Rich profile dropdown like original /wiki) */}
         {dropdownOpen && (
           <div className="absolute right-0 top-12 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="px-4 py-2 border-b border-gray-100">
-              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Signed in as</p>
-              <p className="text-sm font-bold text-gray-800 truncate">System Administrator</p>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                Signed in as
+              </p>
+              <p className="text-sm font-bold text-gray-800 truncate">
+                System Administrator
+              </p>
               {(() => {
-                const activeTierData = TIERS[activeTier as keyof typeof TIERS] || TIERS.gold;
+                const activeTierData =
+                  TIERS[activeTier as keyof typeof TIERS] || TIERS.gold;
                 return (
-                  <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1.5 uppercase ${activeTierData.gradient}`}>
+                  <span
+                    className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1.5 uppercase ${activeTierData.gradient}`}
+                  >
                     {activeTierData.roleTitle}
                   </span>
                 );
@@ -139,7 +170,9 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
 
             {/* Section 1: Tier Selector (For testing purposes) */}
             <div className="px-4 py-1.5 border-b border-gray-50 bg-gray-50/50">
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Simulate Role</p>
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">
+                Simulate Role
+              </p>
             </div>
             <div className="py-1 max-h-40 overflow-y-auto">
               {Object.keys(TIERS).map((tierKey) => {
@@ -160,7 +193,9 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
                       <span>{t.icon}</span>
                       <span>{t.name}</span>
                     </span>
-                    {isSelected && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                    {isSelected && (
+                      <Check className="h-3.5 w-3.5 text-blue-600" />
+                    )}
                   </button>
                 );
               })}
@@ -168,7 +203,9 @@ export default function Navbar({ onToggleSidebar, currentTier, onChangeTier }: N
 
             {/* Section 2: Account Tools */}
             <div className="px-4 py-1.5 border-t border-b border-gray-50 mt-1">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Account</p>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                Account
+              </p>
             </div>
             <div className="py-1">
               {PROFILE_MENU_ITEMS.map((item) => (

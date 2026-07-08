@@ -79,6 +79,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             : "w-0 -translate-x-full lg:w-0 lg:translate-x-0 lg:border-r-0"
         }`}
       >
+        <div className="flex md:hidden justify-center items-center mt-5">
+            <span className="font-serif text-2xl font-extrabold tracking-tight  text-blue-500">
+              META
+            </span>
+            <span className="ml-1 text-sm font-semibold uppercase tracking-wider text-gray-500">
+              IITGN
+            </span>
+          </div>
         {/* Navigation list area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin">
           {SIDEBAR_SECTIONS.map((section) => (
