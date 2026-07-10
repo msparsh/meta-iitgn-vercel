@@ -80,9 +80,7 @@ export default function Navbar({
   };
 
   return (
-    <header className={`h-16 flex items-center justify-between px-4 lg:px-6 shrink-0 bg-white sticky top-0 z-40 select-none ${
-      isWiki ? "shadow-[0_6px_24px_rgba(0,0,0,0.04)] border-b border-gray-150/20" : "border-b border-gray-150"
-    }`}>
+    <header className="h-16 flex items-center justify-between px-4 lg:px-6 shrink-0 bg-white sticky top-0 z-40 select-none shadow-[0_15px_40px_rgba(0,0,0,0.15),0_5px_15px_rgba(0,0,0,0.08)] border-b border-gray-150/30">
       {/* Left side: Hamburger and Logo */}
       <div className="flex items-center gap-2">
         {isWiki ? (

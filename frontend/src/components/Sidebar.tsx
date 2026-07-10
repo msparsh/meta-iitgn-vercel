@@ -88,6 +88,45 @@ export default function Sidebar({
       document.body.style.overflow = "";
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!isOpen || window.innerWidth >= 1024) return;
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffX = touchStartX - touchEndX;
+      const diffY = Math.abs(touchStartY - touchEndY);
+
+      // Swipe left horizontal gesture to close sidebar on mobile
+      if (diffX > 50 && diffX > diffY) {
+        onClose();
+      }
+    };
+
+    const handleTouchStartOutside = (event: TouchEvent) => {
+      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener("touchstart", handleTouchStart);
+    document.addEventListener("touchend", handleTouchEnd);
+    document.addEventListener("touchstart", handleTouchStartOutside);
+
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchend", handleTouchEnd);
+      document.removeEventListener("touchstart", handleTouchStartOutside);
+    };
+  }, [isOpen, onClose]);
   
   const user:userType = {
   name: "Meta IITGN",
@@ -123,13 +162,13 @@ export default function Sidebar({
           fixed inset-y-0 left-0 z-50 lg:static lg:h-full lg:z-auto
           ${
             isOpen
-              ? "w-full lg:w-80 translate-x-0"
-              : "w-0 lg:w-0 -translate-x-full lg:translate-x-0 lg:border-r-0"
+              ? "w-80 translate-x-0"
+              : "w-0 -translate-x-full lg:translate-x-0 lg:border-r-0"
           }
         `}
       >
         {/* Inner fixed-width container to prevent layout squeezing during transitions */}
-        <div className="w-full lg:w-80 h-full flex flex-col shrink-0 relative">
+        <div className="w-80 h-full flex flex-col shrink-0 relative">
           {/* Mobile-only absolute close button */}
           {isOpen && (
             <button
