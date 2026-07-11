@@ -1,5 +1,6 @@
 import WikiClient from "../../../wiki-client";
 import Link from "next/link";
+import { apiService } from "@/lib/api";
 
 interface WikiArticlePageProps {
   params: Promise<{
@@ -35,18 +36,9 @@ Write your content here...`;
   let found = false;
 
   try {
-    // Runs on the server automatically inside a Server Component —
-    // no "use server" directive needed for a plain data fetch.
-    const response = await fetch(
-      `https://meta-iitgn-vercel.onrender.com/page/${slug}`,
-      { cache: "no-store" }
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      pageContent = data.content;
-      found = true;
-    }
+    const data = await apiService.getPage(slug);
+    pageContent = data.content;
+    found = true;
   } catch (error) {
     console.error(
       "Failed to fetch initial page content during build/render:",

@@ -3,6 +3,7 @@
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiService } from "@/lib/api";
 import {
   Search,
   HelpCircle,
@@ -62,12 +63,8 @@ function SearchResultsContent() {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const res = await fetch(`${apiBase}/pages/search?query=${encodeURIComponent(queryParam)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data);
-        }
+        const data = await apiService.searchPages(queryParam);
+        setResults(data);
       } catch (err) {
         console.error("Failed to fetch search results:", err);
       } finally {

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { parseMarkdown, stringifyMarkdown } from "@/lib/utils";
 import { InfoboxData } from "@/lib/types";
+import { apiService } from "@/lib/api";
 
 import { EditableCell } from "@/components/article/editable-cell";
 import { useRouter } from "next/navigation";
@@ -151,9 +152,6 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
   };
 
   const handleSave = async () => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    const targetUrl = `${apiBase}/drafts`;
-
     try {
       const payload = {
         page_id: dbPageId ? Number(dbPageId) : null,
@@ -164,26 +162,15 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
         base_version: version !== undefined ? Number(version) : null,
       };
 
-      const response = await fetch(targetUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      await apiService.submitDraft(payload);
 
-      if (response.ok) {
-        alert("Draft successfully submitted for review!");
-        // Keep the local editor state updated with the unsaved changes for immediate feedback
-        setMarkdown(markdownRef.current);
-      } else {
-        const errData = await response.json().catch(() => ({}));
-        console.error("Failed to submit draft. Server returned status:", response.status, errData);
-        alert(`Failed to submit draft: ${errData.detail || "Unknown error"}`);
-      }
-    } catch (error) {
+      alert("Draft successfully submitted for review!");
+      // Keep the local editor state updated with the unsaved changes for immediate feedback
+      setMarkdown(markdownRef.current);
+    } catch (error: any) {
       console.error("Error submitting draft to backend:", error);
-      alert("Error submitting draft to backend");
+      const detail = error.response?.data?.detail || error.response?.data?.error || "Unknown error";
+      alert(`Failed to submit draft: ${detail}`);
     }
     setIsEditing(false);
   };
