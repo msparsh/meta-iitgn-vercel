@@ -565,12 +565,6 @@ export default function WikiClient({ initialMarkdown, defaultEditing }: WikiClie
                   ]
                 : [
                     {
-                      id: "sidebar",
-                      label: "Sidebar",
-                      icon: PanelRight,
-                      onClick: () => setRightSidebarOpen(!rightSidebarOpen),
-                    },
-                    {
                       id: "edit",
                       label: "Edit Page",
                       icon: Edit3,
@@ -594,6 +588,12 @@ export default function WikiClient({ initialMarkdown, defaultEditing }: WikiClie
                       onClick: () => {
                         router.push("/wiki/campus/new");
                       },
+                    },
+                    {
+                      id: "sidebar",
+                      label: "Sidebar",
+                      icon: PanelRight,
+                      onClick: () => setRightSidebarOpen(!rightSidebarOpen),
                     },
                   ]
             }

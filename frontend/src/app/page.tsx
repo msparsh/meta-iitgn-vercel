@@ -28,6 +28,7 @@ import {
   Trash2,
   CheckCircle2,
   Shield,
+  Home,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import BottomNavbar from "@/components/BottomNavbar";
@@ -150,40 +151,40 @@ export default function HomePage() {
     {
       title: "IIT Gandhinagar Campus & Architecture",
       category: "Campus",
-      path: "/wiki",
+      path: "/wiki/page/1",
       description:
         "Information about Palaj campus facilities, design, architecture, and construction.",
     },
     {
       title: "Amalthea Technical Summit",
       category: "Fests",
-      path: "/wiki",
+      path: "/wiki/page/1",
       description: "The student-organized technical summit of IIT Gandhinagar.",
     },
     {
       title: "Hostels and Student Life",
       category: "Campus",
-      path: "/wiki",
+      path: "/wiki/page/1",
       description:
         "Everything about hostels, Mess dining, and student council rules.",
     },
     {
       title: "Technical Council & Clubs",
       category: "Clubs",
-      path: "/wiki",
+      path: "/wiki/page/1",
       description:
         "Explore robotics, coding, animanga, astronomy, and developer clubs.",
     },
     {
       title: "Computer Science Curriculum",
       category: "Academics",
-      path: "/wiki",
+      path: "/wiki/page/1",
       description: "Undergraduate curriculum and course plans for CS major.",
     },
     {
       title: "Research Labs & Facilities",
       category: "Research",
-      path: "/wiki",
+      path: "/wiki/page/1",
       description:
         "Directory of advanced research instrumentation and centers.",
     },
@@ -201,9 +202,11 @@ export default function HomePage() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/wiki?search=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(
+        `/wiki/page/1?search=${encodeURIComponent(searchQuery.trim())}`
+      );
     } else {
-      router.push("/wiki");
+      router.push("/wiki/page/1");
     }
   };
 
@@ -464,13 +467,40 @@ export default function HomePage() {
             className="flex-1 h-auto lg:h-full overflow-y-visible lg:overflow-y-auto  scroll-smooth relative"
             id="right-scroll-panel"
           >
+            {/* slimnav bar for desktop only with bookmark , serach and newpage  */}
+            <div className="hidden lg:flex sticky w-full justify-end top-0 z-30 items-center gap-1  bg-white/20  border-b border-white/10 shadow-[0_1px_12px_rgba(0,0,0,0.06)] px-6 py-1.5 select-none">
+              {[
+                { id: "home", label: "Home", icon: Home },
+                { id: "search", label: "Search", icon: Search },
+                { id: "bookmarks", label: "Bookmarks", icon: BookmarkIcon },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() =>
+                      setActiveTab(tab.id as "home" | "search" | "bookmarks")
+                    }
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors duration-150 cursor-pointer ${
+                      isActive
+                        ? "bg-blue-50 text-blue-600"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
             {activeTab === "home" ? (
               <>
                 {/* Mountain Hero Banner */}
                 <div className="relative w-full h-[85vh] lg:h-dvh min-h-125 hidden  md:flex flex-col items-center justify-center text-center p-6 bg-slate-900 overflow-hidden select-none">
                   {/* Background Image with Dark Gradient Wash */}
                   <div
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    className="absolute top-0 inset-0 bg-cover bg-center bg-no-repeat"
                     style={{
                       backgroundImage: "url('/homepage_bg.png')",
                       transform: `translate(${mousePos.x}px, ${mousePos.y}px) scale(1.15)`,
@@ -520,7 +550,7 @@ export default function HomePage() {
 
                   {/* Pulsating Scroll Wheel Indicator */}
                   <div
-                    className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer text-white/85 hover:text-white group select-none transition-opacity duration-300"
+                    className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer text-white/85 hover:text-white group select-none transition-opacity duration-300"
                     onClick={scrollToFeed}
                   >
                     <span className="text-[10px] font-black uppercase tracking-widest text-shadow-premium">
@@ -569,7 +599,7 @@ export default function HomePage() {
                             contours.
                           </p>
                           <Link
-                            href="/wiki"
+                            href="/wiki/page/1"
                             className="inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-500 hover:text-blue-800 uppercase tracking-wider pt-2"
                           >
                             Read full article{" "}
@@ -586,7 +616,7 @@ export default function HomePage() {
                           In the News
                         </h2>
                         <Link
-                          href="/wiki"
+                          href="/wiki/page/1"
                           className="text-xs font-bold text-blue-500 hover:text-blue-800 hover:underline"
                         >
                           View all
@@ -644,7 +674,7 @@ export default function HomePage() {
                         </div>
 
                         <Link
-                          href="/wiki"
+                          href="/wiki/page/1"
                           className="inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-500 hover:text-blue-800 uppercase tracking-wider pt-2"
                         >
                           More campus news{" "}
@@ -670,7 +700,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <Link
-                        href="/wiki"
+                        href="/wiki/page/1"
                         className="text-[11px] font-bold text-blue-500 hover:text-blue-800 uppercase tracking-wider mt-4"
                       >
                         More trivia
@@ -699,7 +729,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <Link
-                        href="/wiki"
+                        href="/wiki/page/1"
                         className="text-[11px] font-bold text-blue-500 hover:text-blue-800 uppercase tracking-wider mt-4"
                       >
                         History timeline
@@ -719,7 +749,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <Link
-                        href="/wiki"
+                        href="/wiki/page/1"
                         className="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-all duration-150 active:scale-97"
                       >
                         Start Contributing
@@ -761,7 +791,7 @@ export default function HomePage() {
                         </ul>
                       </div>
                       <Link
-                        href="/wiki"
+                        href="/wiki/page/1"
                         className="text-[11px] font-bold text-blue-500 hover:text-blue-800 uppercase tracking-wider mt-4"
                       >
                         View all new pages
@@ -800,7 +830,7 @@ export default function HomePage() {
                         </ul>
                       </div>
                       <Link
-                        href="/wiki"
+                        href="/wiki/page/1"
                         className="text-[11px] font-bold text-blue-500 hover:text-blue-800 uppercase tracking-wider mt-4"
                       >
                         View all edits
@@ -909,7 +939,7 @@ export default function HomePage() {
               <div className="h-full flex flex-col overflow-hidden bg-[#FCFCFD]">
                 {/* Sticky App Header */}
                 <div className="sticky top-0 z-20 bg-white border-b border-slate-100 p-6 md:p-8 shrink-0 select-none space-y-4">
-                  <div className="text-center md:text-left flex justify-between">
+                  <div className="text-center md:text-left flex">
                     <div>
                       <h1 className="text-2xl font-serif font-black text-slate-900 tracking-tight">
                         Search
@@ -919,10 +949,7 @@ export default function HomePage() {
                         resources.
                       </p>
                     </div>
-                    <div >
-                      <button className="bg-blue-500 cursor-pointer hidden lg:flex text-white rounded-xl px-4 py-1"
-                      onClick={()=>setActiveTab("home")}>Back</button>
-                    </div>
+                    
                   </div>
 
                   {/* Sticky Search bar */}

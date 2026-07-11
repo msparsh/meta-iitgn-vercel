@@ -74,9 +74,9 @@ export default function Navbar({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/wiki?search=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/wiki/page/1?search=${encodeURIComponent(searchQuery.trim())}`);
     } else {
-      router.push("/wiki");
+      router.push("/wiki/page/1");
     }
   };
 
