@@ -69,7 +69,7 @@ function SearchResultsContent() {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://meta-iitgn-vercel.onrender.com";
         const res = await fetch(`${apiBase}/pages/search?query=${encodeURIComponent(queryParam)}`);
         if (res.ok) {
           const data = await res.json();

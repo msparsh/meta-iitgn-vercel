@@ -28,7 +28,7 @@ export default function PendingChangesView({ setShowPendingChanges, pageId }: Pe
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://meta-iitgn-vercel.onrender.com";
 
   const fetchDrafts = useCallback(async () => {
     setLoading(true);

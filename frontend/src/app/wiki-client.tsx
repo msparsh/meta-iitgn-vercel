@@ -151,7 +151,7 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
   };
 
   const handleSave = async () => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://meta-iitgn-vercel.onrender.com";
     const targetUrl = `${apiBase}/drafts`;
 
     try {
