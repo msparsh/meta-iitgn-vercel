@@ -34,9 +34,34 @@ Write your content here...`;
     return <WikiClient initialMarkdown={template} defaultEditing={true} />;
   }
 
-  const article = categoryInfo?.articles.find((a) => a.slug === slug);
+  let initialMarkdown = "";
+  let dbPageId: number | undefined = undefined;
+  let version: number | undefined = undefined;
 
-  if (!article) {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+  try {
+    const res = await fetch(`${apiBase}/pages/${slug}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      initialMarkdown = data.content;
+      dbPageId = data.page_id;
+      version = data.version;
+    } else {
+      // Fallback to placeholder if backend is not seeded or does not have it
+      const article = categoryInfo?.articles.find((a) => a.slug === slug);
+      if (article) {
+        initialMarkdown = article.content;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch from backend API, using fallback data:", err);
+    const article = categoryInfo?.articles.find((a) => a.slug === slug);
+    if (article) {
+      initialMarkdown = article.content;
+    }
+  }
+
+  if (!initialMarkdown) {
     return (
       <main className="flex-1 p-6 md:p-8 lg:p-12 bg-[#FCFCFD]">
         <div className="max-w-4xl mx-auto text-center py-20">
@@ -53,5 +78,11 @@ Write your content here...`;
     );
   }
 
-  return <WikiClient initialMarkdown={article.content} />;
+  return (
+    <WikiClient
+      initialMarkdown={initialMarkdown}
+      dbPageId={dbPageId}
+      version={version}
+    />
+  );
 }

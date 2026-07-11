@@ -1,13 +1,91 @@
 "use client";
 
-import React from "react";
-import { ArrowLeft } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 interface PendingChangesViewProps {
   setShowPendingChanges: (show: boolean) => void;
+  pageId?: number;
 }
 
-export default function PendingChangesView({ setShowPendingChanges }: PendingChangesViewProps) {
+interface PendingDraft {
+  pending_id: number;
+  page_id: number | null;
+  title: string;
+  content: string;
+  metadata: Record<string, unknown>;
+  status: string;
+  editor_id: number;
+  version: number | null;
+  created_at: string;
+  users?: {
+    name: string;
+  } | null;
+}
+
+export default function PendingChangesView({ setShowPendingChanges, pageId }: PendingChangesViewProps) {
+  const [drafts, setDrafts] = useState<PendingDraft[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+
+  const fetchDrafts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = pageId
+        ? `${apiBase}/drafts/pending?page_id=${pageId}`
+        : `${apiBase}/drafts/pending`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch pending drafts (status: ${response.status})`);
+      }
+      const data = await response.json();
+      setDrafts(data);
+    } catch (err: unknown) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : "An error occurred while loading pending changes.";
+      setError(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, [pageId, apiBase]);
+
+  useEffect(() => {
+    fetchDrafts();
+  }, [fetchDrafts]);
+
+  const handleReview = async (pendingId: number, action: "approve" | "reject") => {
+    try {
+      const response = await fetch(`${apiBase}/drafts/${pendingId}/review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reviewer_id: 0, // Simulated current reviewer ID
+          action: action,
+          rejection_reason: action === "reject" ? "Rejected by reviewer/moderator." : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Failed to ${action} draft.`);
+      }
+
+      alert(`Draft ${action === "approve" ? "approved and published" : "rejected"} successfully!`);
+      
+      // Update state by removing the processed draft
+      setDrafts((prev) => prev.filter((d) => d.pending_id !== pendingId));
+    } catch (err: unknown) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : `Error processing review`;
+      alert(errMsg);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-white z-[60] flex flex-col h-screen w-screen overflow-hidden select-none animate-in fade-in duration-200">
       {/* Top Header Bar */}
@@ -25,7 +103,7 @@ export default function PendingChangesView({ setShowPendingChanges }: PendingCha
         <span className="text-sm font-bold text-gray-800 uppercase tracking-wider">Changes</span>
       </header>
 
-      {/* Changes Body (Like Search & Bookmarks pages) */}
+      {/* Changes Body */}
       <div className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 md:p-8 lg:p-12">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex flex-col gap-2">
@@ -33,77 +111,88 @@ export default function PendingChangesView({ setShowPendingChanges }: PendingCha
             <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Review proposed community revisions before publishing</p>
           </div>
 
-          <div className="space-y-4 pt-4">
-            {[
-              {
-                rev: 1,
-                title: "Updated CS Major placement statistics for 2025",
-                author: "Rohan Sharma",
-                avatar: "RS",
-                time: "2 hours ago",
-                badge: "Student Contributor",
-                badgeBg: "bg-emerald-50 text-emerald-600 border border-emerald-200",
-                details: "Proposed update to placements: CS average package changed from 22.4 LPA to 23.8 LPA according to official council records."
-              },
-              {
-                rev: 2,
-                title: "Palaj Campus hostel guide clarification",
-                author: "Aditi Patel",
-                avatar: "AP",
-                time: "6 hours ago",
-                badge: "Guest Editor",
-                badgeBg: "bg-gray-50 text-gray-600 border border-gray-200",
-                details: "Suggested formatting and detail cleanups under the hostel guide laundry services."
-              }
-            ].map((pending) => (
-              <div key={pending.rev} className="p-4 sm:p-5 border border-gray-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-150 relative group">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-sm text-gray-700 shrink-0">
-                    {pending.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
-                      <h4 className="text-base font-bold text-gray-800 truncate leading-snug">{pending.title}</h4>
-                      <span className="text-xs text-gray-400 shrink-0 font-medium">{pending.time}</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">{pending.details}</p>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+              <p className="text-sm text-gray-500">Loading pending drafts...</p>
+            </div>
+          ) : error ? (
+            <div className="p-6 border border-rose-200 bg-rose-50 text-rose-800 rounded-2xl">
+              <p className="font-semibold">Error Loading Drafts</p>
+              <p className="text-sm mt-1">{error}</p>
+              <button 
+                onClick={fetchDrafts}
+                className="mt-4 px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : drafts.length === 0 ? (
+            <div className="text-center py-20 border border-dashed border-gray-300 bg-white rounded-2xl">
+              <p className="text-gray-500 font-medium">No pending drafts awaiting review.</p>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-4">
+              {drafts.map((pending) => {
+                const authorName = pending.users?.name || `User #${pending.editor_id}`;
+                const initials = authorName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase() || "U";
+                const timeString = new Date(pending.created_at).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                });
 
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 border-dashed">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-gray-700">{pending.author}</span>
-                        <span className={`text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full ${pending.badgeBg}`}>
-                          {pending.badge}
-                        </span>
+                return (
+                  <div key={pending.pending_id} className="p-4 sm:p-5 border border-gray-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-150 relative group">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-sm text-gray-700 shrink-0">
+                        {initials}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
+                          <h4 className="text-base font-bold text-gray-800 truncate leading-snug">{pending.title}</h4>
+                          <span className="text-xs text-gray-400 shrink-0 font-medium">{timeString}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1.5 leading-relaxed line-clamp-3">
+                          {pending.content.replace(/---[\s\S]*?---/, "").trim()}
+                        </p>
 
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            alert(`Proposed change approved successfully!`);
-                            setShowPendingChanges(false);
-                            window.dispatchEvent(new CustomEvent("hide-wiki-history"));
-                          }}
-                          className="text-xs font-extrabold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer duration-150"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => {
-                            alert(`Proposed change rejected.`);
-                            setShowPendingChanges(false);
-                            window.dispatchEvent(new CustomEvent("hide-wiki-history"));
-                          }}
-                          className="text-xs font-extrabold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer duration-150"
-                        >
-                          Reject
-                        </button>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 border-dashed">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-gray-700">{authorName}</span>
+                            <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
+                              {pending.page_id ? "Edit Proposal" : "New Page Proposal"}
+                            </span>
+                            {pending.version !== null && (
+                              <span className="text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200">
+                                v{pending.version}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleReview(pending.pending_id, "approve")}
+                              className="text-xs font-extrabold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer duration-150"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReview(pending.pending_id, "reject")}
+                              className="text-xs font-extrabold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer duration-150"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,9 +20,6 @@ import {
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 import { BeautifulSearchBox, BeautifulTabBar } from "@/components/SearchDesign";
-import {
-  allSearchableItems,
-} from "@/lib/search-data";
 
 const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   Campus: Building2,
@@ -57,14 +54,33 @@ function SearchResultsContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [category, setCategory] = useState(categoryParam);
+  
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const filteredItems = allSearchableItems.filter((item) => {
-    const matchesSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    const fetchResults = async () => {
+      setLoading(true);
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const res = await fetch(`${apiBase}/pages/search?query=${encodeURIComponent(queryParam)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setResults(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch search results:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResults();
+  }, [queryParam]);
+
+  const filteredItems = results.filter((item) => {
     const matchesCategory =
-      category === "All" || item.category === category;
-    return matchesSearch && matchesCategory;
+      category === "All" || item.category.toLowerCase() === category.toLowerCase();
+    return matchesCategory;
   });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -73,6 +89,7 @@ function SearchResultsContent() {
       `/search-results?query=${encodeURIComponent(searchQuery.trim())}&category=${category}`
     );
   };
+
 
   const selectCategory = (newCat: string) => {
     setCategory(newCat);

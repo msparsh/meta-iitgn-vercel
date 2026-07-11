@@ -160,7 +160,7 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
         title: parsed.title || "Untitled Page",
         content: markdownRef.current,
         metadata: {},
-        editor_id: 1, // Simulated default editor_id
+        editor_id: 0, // Simulated default editor_id
         base_version: version !== undefined ? Number(version) : null,
       };
 
@@ -264,7 +264,7 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
   }
 
   if (showPendingChanges) {
-    return <PendingChangesView setShowPendingChanges={setShowPendingChanges} />;
+    return <PendingChangesView setShowPendingChanges={setShowPendingChanges} pageId={dbPageId} />;
   }
 
   return (

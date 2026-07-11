@@ -48,27 +48,26 @@ const getPagePath = (item: BookmarkItem) => {
   const title = item.title.toLowerCase();
   
   if (title.includes("campus & architecture")) {
-    return "/wiki/facilities/sports-complex";
+    return "/wiki/sports-complex";
   }
   if (title.includes("amalthea technical summit") || title === "amalthea") {
-    return "/wiki/fests/amalthea";
+    return "/wiki/amalthea";
   }
   if (title.includes("academic courses") || title.includes("introduction to computing")) {
-    return "/wiki/courses/cs-101";
+    return "/wiki/cs-101";
   }
   if (title.includes("senate") || title.includes("coding club")) {
-    return "/wiki/clubs/coding-club";
+    return "/wiki/coding-club";
   }
   if (title.includes("research labs") || title.includes("cognitive science")) {
-    return "/wiki/research/cognitive-science-lab";
+    return "/wiki/cognitive-science-lab";
   }
   if (title.includes("hostel policies") || title.includes("grading policy")) {
-    return "/wiki/policies/grading-policy";
+    return "/wiki/grading-policy";
   }
 
-  const categoryPart = item.category.toLowerCase();
   const slugPart = item.slug ? item.slug.toLowerCase() : item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  return `/wiki/${categoryPart}/${slugPart}`;
+  return `/wiki/${slugPart}`;
 };
 
 export default function BookmarksTab({

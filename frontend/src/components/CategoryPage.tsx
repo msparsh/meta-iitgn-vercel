@@ -61,7 +61,7 @@ export default function CategoryPage({ categorySlug }: CategoryPageProps) {
           
           <div className="shrink-0 mb-1">
             <Link
-              href={`/wiki/${categorySlug}/new`}
+              href={`/wiki/new?category=${categorySlug}`}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
             >
               <PlusCircle className="h-4.5 w-4.5" />
@@ -104,7 +104,7 @@ export default function CategoryPage({ categorySlug }: CategoryPageProps) {
 
                   <div className="pt-6">
                     <Link
-                      href={`/wiki/${categorySlug}/${article.slug}`}
+                      href={`/wiki/${article.slug}`}
                       className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors uppercase tracking-wider cursor-pointer"
                     >
                       <span>Read Article</span>
