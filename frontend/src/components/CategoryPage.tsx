@@ -54,7 +54,18 @@ export default function CategoryPage({ categorySlug }: CategoryPageProps) {
             }
           }
 
-          const categoryName = (metaCategory || parsedCategory).trim();
+          let categoryName = (metaCategory || parsedCategory).trim().toLowerCase();
+          
+          if (categoryName === "campus facilities") categoryName = "facilities";
+          if (categoryName === "faculty profiles") categoryName = "faculty";
+          if (categoryName === "courses info") categoryName = "courses";
+          if (categoryName === "research labs") categoryName = "research";
+          if (categoryName === "hostels guide") categoryName = "hostels";
+          if (categoryName === "student clubs") categoryName = "clubs";
+          if (categoryName === "institute fests") categoryName = "fests";
+          if (categoryName === "placement stats") categoryName = "placements";
+          if (categoryName === "institute policies") categoryName = "policies";
+          if (categoryName === "academic calendar") categoryName = "calendar";
 
           // 1-1 mapping: check if the pageCategory matches the categorySlug directly
           if (categoryName === categorySlug) {

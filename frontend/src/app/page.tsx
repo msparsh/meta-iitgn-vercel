@@ -520,16 +520,13 @@ ${newHistoryContent}`,
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 
-                let buttonStyle = "";
-                if (activeTab === "home" && !isScrolled) {
-                  buttonStyle = isActive
-                    ? "bg-white/20 text-white border border-white/25 shadow-xs"
-                    : "text-white/70 hover:bg-white/10 hover:text-white";
-                } else {
-                  buttonStyle = isActive
-                    ? "bg-blue-500/15 text-blue-700 border border-blue-500/20 shadow-xs"
-                    : "text-slate-700 hover:bg-slate-900/5 hover:text-slate-900";
-                }
+                const buttonStyle = !isScrolled
+                  ? (isActive
+                      ? "bg-white/20 text-white border border-white/25 shadow-xs"
+                      : "text-white/70 hover:bg-white/10 hover:text-white")
+                  : (isActive
+                      ? "bg-slate-900/15 text-slate-950 border border-slate-900/20 shadow-xs"
+                      : "text-slate-700 hover:bg-slate-900/5 hover:text-slate-950");
 
                 return (
                   <button

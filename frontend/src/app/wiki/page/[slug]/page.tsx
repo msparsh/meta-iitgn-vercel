@@ -7,12 +7,17 @@ interface WikiArticlePageProps {
     category: string;
     slug: string;
   }>;
+  searchParams: Promise<{
+    title?: string;
+  }>;
 }
 
-export default async function WikiArticlePage({ params }: WikiArticlePageProps) {
+export default async function WikiArticlePage({ params, searchParams }: WikiArticlePageProps) {
   const { slug } = await params;
+  const { title } = await searchParams;
 
   if (slug === "new") {
+    const displayTitle = title ? title : "Untitled Article";
     const template = `---
 image: https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600
 imageAlt: New Article
@@ -25,7 +30,7 @@ rows:
     type: text
 ---
 
-# Untitled Article
+# ${displayTitle}
 
 Write your content here...`;
 
@@ -73,10 +78,10 @@ Write your content here...`;
             The requested article could not be found.
           </p>
           <Link
-            href="/"
+            href={`/wiki/campus/new?title=${encodeURIComponent(slug.replace(/-/g, ' '))}`}
             className="inline-flex items-center gap-2 mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors"
           >
-            Back to Wiki
+            Create this article
           </Link>
         </div>
       </main>

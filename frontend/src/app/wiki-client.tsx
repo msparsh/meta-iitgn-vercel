@@ -182,6 +182,21 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
     setMarkdown(newMarkdown);
   };
 
+  const normalizeCategoryToSlug = (value: string): string => {
+    const normalized = value.toLowerCase().trim();
+    if (normalized === "campus facilities" || normalized === "facilities") return "facilities";
+    if (normalized === "faculty profiles" || normalized === "faculty") return "faculty";
+    if (normalized === "courses info" || normalized === "courses") return "courses";
+    if (normalized === "research labs" || normalized === "research") return "research";
+    if (normalized === "hostels guide" || normalized === "hostels") return "hostels";
+    if (normalized === "student clubs" || normalized === "clubs") return "clubs";
+    if (normalized === "institute fests" || normalized === "fests") return "fests";
+    if (normalized === "placement stats" || normalized === "placements") return "placements";
+    if (normalized === "institute policies" || normalized === "policies") return "policies";
+    if (normalized === "academic calendar" || normalized === "calendar") return "calendar";
+    return normalized;
+  };
+
   const handleSave = async () => {
     try {
       let category = categorySlug || initialMetadata?.category || "campus";
@@ -189,9 +204,9 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
         row.label?.toLowerCase() === "category"
       );
       if (categoryRow && categoryRow.value && typeof categoryRow.value === "string") {
-        category = categoryRow.value.toLowerCase().trim();
+        category = normalizeCategoryToSlug(categoryRow.value);
       } else {
-        category = category.toLowerCase().trim();
+        category = normalizeCategoryToSlug(category);
       }
 
       const payload = {
@@ -206,11 +221,7 @@ export default function WikiClient({ initialMarkdown, defaultEditing, dbPageId, 
       const response = await apiService.submitDraft(payload);
 
       if (response) {
-        if (!dbPageId) {
-          alert("Page successfully published!");
-        } else {
-          alert("Draft successfully submitted for review!");
-        }
+        alert("Draft successfully submitted for review!");
         // Keep the local editor state updated with the unsaved changes for immediate feedback
         setMarkdown(markdownRef.current);
         fetchPendingCount();

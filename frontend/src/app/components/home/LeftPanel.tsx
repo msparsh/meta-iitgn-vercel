@@ -181,21 +181,21 @@ export default function LeftPanel({
         </div>
       </div>
         {/* Credits Footer */}
-        <div className="pt-4 border-t hidden lg:flex border-slate-100  flex-col items-center text-center gap-1.5 select-none mt-6">
-          <div className="text-[10px] text-gray-400 font-medium flex items-center gap-1.5">
+        <div className="pt-5 border-t hidden lg:flex border-slate-100/60 flex-col items-center text-center gap-1.5 select-none mt-6 w-full">
+          <div className="text-[12px] text-slate-500 font-medium flex items-center justify-center gap-1.5 uppercase tracking-wider">
             <span>Made with</span>
             <Heart
               onClick={spawnHearts}
-              className="w-4 h-4 text-red-500 fill-red-500 cursor-pointer hover:scale-130 transition-transform duration-200 animate-pulse"
+              className="w-6 h-6 text-red-500 fill-red-500 cursor-pointer hover:scale-130 transition-transform duration-200 filter drop-shadow-[0_0_4px_rgba(239,68,68,0.4)] animate-pulse shrink-0"
             />
-            <span>
-              by{" "}
-              <span className="font-semibold text-gray-600">
-                Technical Council, IITGN
-              </span>
+          </div>
+          <div className="text-[12px] text-slate-500 font-semibold tracking-wide">
+            by{" "}
+            <span className="font-extrabold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-indigo-700 transition-colors">
+              Technical Council, IITGN
             </span>
           </div>
-          <div className="text-[10px] font-semibold text-gray-400 mt-0.5">
+          <div className="text-[9px] font-bold text-slate-400/60 tracking-widest uppercase mt-1">
             © {new Date().getFullYear()} IIT Gandhinagar
           </div>
         </div>

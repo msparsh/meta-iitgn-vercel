@@ -199,10 +199,10 @@ function SearchResultsContent() {
                             </span>
                           </div>
                           <h4 className="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
-                            {highlightText(item.title, searchQuery)}
+                            {item.title}
                           </h4>
                           <p className="text-xs text-slate-500 leading-relaxed mt-2 line-clamp-3">
-                            {highlightText(item.description, searchQuery)}
+                            {item.description}
                           </p>
                         </div>
                       </Link>
