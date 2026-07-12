@@ -30,12 +30,12 @@
     "googleapis": "^173.0.0",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
     "slugify": "^1.6.9"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
     "prisma": "^6.19.3",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2"
