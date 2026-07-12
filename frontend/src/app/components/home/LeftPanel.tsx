@@ -22,6 +22,7 @@ import {
   TrendingUp,
   LucideIcon,
   Settings,
+  GraduationCap,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { QUICK_PORTALS } from "@/lib/constants";
@@ -52,6 +53,7 @@ const PORTAL_ICON_MAP: Record<string, LucideIcon> = {
   Calendar,
   Shield,
   TrendingUp,
+  GraduationCap,
 };
 
 export default function LeftPanel({
@@ -130,9 +132,8 @@ export default function LeftPanel({
 
       {/* Left Panel: Fixed Dashboard on Desktop */}
       <div
-        className={`w-full lg:w-120 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-150 flex flex-col justify-between p-4 bg-white z-20 h-auto lg:h-full mb-10 md:mb-0 overflow-y-visible lg:overflow-hidden select-none pb-0 lg:pb-6 ${
-          activeTab !== "home" ? "hidden lg:flex" : "flex"
-        }`}
+        className={`w-full lg:w-120 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-150 flex flex-col justify-between p-4 bg-white z-20 h-auto lg:h-full mb-10 md:mb-0 overflow-y-visible lg:overflow-hidden select-none pb-0 lg:pb-6 ${activeTab !== "home" ? "hidden lg:flex" : "flex"
+          }`}
       >
         <div className="space-y-2">
           {/* Header with Hamburger Menu and Profile Dropdown inside Left Panel */}
@@ -225,7 +226,7 @@ export default function LeftPanel({
               </div>
             )}
           </div>
-      </div>
+        </div>
         {/* Credits Footer */}
         <div className="pt-5 border-t hidden lg:flex border-slate-100/60 flex-col items-center text-center gap-1.5 select-none mt-6 w-full">
           <div className="text-[12px] text-slate-500 font-medium flex items-center justify-center gap-1.5 uppercase tracking-wider">

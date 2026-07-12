@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { BookOpen, ChevronRight, FolderPlus, PlusCircle, Search, Sparkles, Pencil, X, Pin, Building2, Users2, Trophy, Tent, MapPin, FlaskConical, Calendar, Shield, TrendingUp, Loader2 } from "lucide-react";
+import { BookOpen, ChevronRight, FolderPlus, PlusCircle, Search, Sparkles, Pencil, X, Pin, Building2, Users2, Trophy, Tent, MapPin, FlaskConical, Calendar, Shield, TrendingUp, Loader2, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiService } from "@/api";
 import { Category } from "@/context/AuthContext";
@@ -20,6 +20,7 @@ const ICON_MAP: Record<string, any> = {
   Calendar,
   Shield,
   TrendingUp,
+  GraduationCap,
 };
 
 interface CategoryFormInput {
@@ -252,10 +253,10 @@ export default function CategoriesPage() {
 
         {/* Edit Category Modal Overlay */}
         {editingCategory && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-0 sm:p-4 animate-in fade-in duration-200">
             <form
               onSubmit={handleSubmitEdit(onEditSubmit)}
-              className="w-full max-w-md bg-white border border-gray-100 p-6 rounded-2xl shadow-xl space-y-4 animate-in zoom-in-95 duration-200"
+              className="w-full h-full sm:h-auto sm:max-w-md bg-white border-0 sm:border border-gray-100 p-6 rounded-none sm:rounded-2xl shadow-none sm:shadow-xl space-y-4 animate-in zoom-in-95 duration-200 overflow-y-auto"
             >
               <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                 <div className="flex items-center gap-2 text-blue-700 font-bold">

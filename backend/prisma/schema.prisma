@@ -197,6 +197,7 @@ model categories {
   total_articles Int      @default(0)
   is_pinned      Boolean  @default(false)
   icon           String   @default("BookOpen")
+  color          String   @default("blue")
   created_at     DateTime @default(now())
   updated_at     DateTime @default(now()) @updatedAt
 }
