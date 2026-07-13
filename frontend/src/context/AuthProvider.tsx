@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { AuthContext, type User, type Category } from "./AuthContext";
 import { api } from "../lib/api";
 
+import { db } from "../lib/db";
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -9,6 +11,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeTier, setActiveTier] = useState<"bronze" | "silver" | "gold">("bronze");
   const [settingsTab, setSettingsTab] = useState<"appearance" | "layout" | "search" | "alerts" | null>(null);
+  const [totalPagesCount, setTotalPagesCountState] = useState<number | null>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("wiki-total-pages-count");
+      return saved ? parseInt(saved, 10) : null;
+    }
+    return null;
+  });
+
+  const setTotalPagesCount = useCallback((val: any) => {
+    setTotalPagesCountState((prev: any) => {
+      const nextVal = typeof val === "function" ? val(prev) : val;
+      if (nextVal !== null) {
+        localStorage.setItem("wiki-total-pages-count", String(nextVal));
+      } else {
+        localStorage.removeItem("wiki-total-pages-count");
+      }
+      return nextVal;
+    });
+  }, []);
 
   useEffect(() => {
     if (user?.role) {
@@ -34,6 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setAuth(false);
       setLoading(false);
+      setTotalPagesCount(null);
+      try {
+        await db.bookmarks.clear();
+        await db.news.clear();
+        await db.contributors.clear();
+        await db.pendingpages.clear();
+        await db.updatedpages.clear();
+        await db.meta.clear();
+      } catch (e) {
+        console.error("Failed to clear Dexie DB on logout:", e);
+      }
     }
   };
 
@@ -115,6 +147,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setActiveTier,
         settingsTab,
         setSettingsTab,
+        totalPagesCount,
+        setTotalPagesCount,
       }}>
       {children}
     </AuthContext.Provider>

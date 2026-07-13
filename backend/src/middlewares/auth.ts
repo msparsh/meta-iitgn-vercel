@@ -16,7 +16,7 @@ export function protect(...allowedRoles: string[]) {
     res: express.Response,
     next: express.NextFunction,
   ) => {
-    const token = req.cookies.token;
+    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({
@@ -66,3 +66,48 @@ export function protect(...allowedRoles: string[]) {
     next();
   };
 }
+
+export async function checkAuth(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) {
+  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication token missing",
+    });
+  }
+
+  const tokenUser = validateToken(token);
+
+  if (!tokenUser) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid token",
+    });
+  }
+
+  const dbUser = await prisma.users.findUnique({
+    where: { user_id: Number(tokenUser.user_id) },
+    select: {
+      user_id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  if (!dbUser) {
+    return res.status(401).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  req.user = dbUser;
+  next();
+}
+
