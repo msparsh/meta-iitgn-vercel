@@ -40,6 +40,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.role]);
 
+  useEffect(() => {
+    if (loading) return;
+
+    // Detect user change to clear Dexie DB and localStorage caches for privacy and protection
+    const storedUserKey = "wiki-current-user-id";
+    const currentUserId = user ? String(user.user_id) : "guest";
+    const previousUserId = localStorage.getItem(storedUserKey);
+
+    if (previousUserId !== null && previousUserId !== currentUserId) {
+      localStorage.removeItem("syncCheck");
+      const clearDb = async () => {
+        try {
+          await Promise.all([
+            db.bookmarks.clear(),
+            db.news.clear(),
+            db.contributors.clear(),
+            db.pendingpages.clear(),
+            db.updatedpages.clear(),
+            db.meta.clear(),
+          ]);
+        } catch (e) {
+          console.error("Failed to clear Dexie DB on user change:", e);
+        }
+      };
+      clearDb();
+    }
+    localStorage.setItem(storedUserKey, currentUserId);
+  }, [user, loading]);
+
   const logout = async () => {
     try {
       await api.post(
@@ -56,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuth(false);
       setLoading(false);
       setTotalPagesCount(null);
+      localStorage.removeItem("syncCheck");
       try {
         await db.bookmarks.clear();
         await db.news.clear();

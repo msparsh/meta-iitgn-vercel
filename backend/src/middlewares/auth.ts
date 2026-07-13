@@ -111,3 +111,40 @@ export async function checkAuth(
   next();
 }
 
+export async function checkAuthOptional(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction,
+) {
+  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const tokenUser = validateToken(token);
+    if (!tokenUser) {
+      return next();
+    }
+
+    const dbUser = await prisma.users.findUnique({
+      where: { user_id: Number(tokenUser.user_id) },
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    if (dbUser) {
+      req.user = dbUser;
+    }
+  } catch (e) {
+    // ignore validation errors
+  }
+  next();
+}
+
+

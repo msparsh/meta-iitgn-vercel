@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { getPage, getRecentNewPages, getRecentUpdatedPages, searchPages, getPageStats, createPage, updatePage, deletePage, getPageCount, getSyncCheck } from "../controllers/page.controller.js";
-import { checkAuth, protect } from "../middlewares/auth.js";
+import { checkAuth, protect, checkAuthOptional } from "../middlewares/auth.js";
 
 const router=Router();
 
-router.get("/sync-check", checkAuth, getSyncCheck);
+router.get("/sync-check", checkAuthOptional, getSyncCheck);
 router.get("/stats", getPageStats);
 router.get("/count", getPageCount);
 router.get("/recent/new", getRecentNewPages);

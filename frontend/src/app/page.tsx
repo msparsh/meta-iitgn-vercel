@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -14,6 +14,7 @@ import { apiService } from "@/api";
 import BottomNavbar from "@/components/BottomNavbar";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/db";
+import { loadCachedCollection } from "@/lib/cache";
 
 // Subcomponents
 import LeftPanel from "./components/home/LeftPanel";
@@ -29,6 +30,9 @@ import NewsOverlay from "./components/home/overlays/NewsOverlay";
 import TriviaOverlay from "./components/home/overlays/TriviaOverlay";
 import HistoryOverlay from "./components/home/overlays/HistoryOverlay";
 import EditorsOverlay from "./components/home/overlays/EditorsOverlay";
+
+let activeHomeDataPromise: Promise<void> | null = null;
+let activeHomeDataPromiseIsForce = false;
 
 export default function HomePage() {
   const {
@@ -91,279 +95,350 @@ export default function HomePage() {
   const [pendingPageNumber, setPendingPageNumber] = useState(1);
   const [pendingPagesHasMore, setPendingPagesHasMore] = useState(true);
 
-  const loadHomeData = async () => {
-    try {
-      setNewPageNumber(1);
-      setUpdatedPageNumber(1);
-      setPendingPageNumber(1);
+  const loadHomeData = useCallback(async (options?: { forceRefresh?: boolean }) => {
+    const force = !!options?.forceRefresh;
 
-      // 1. Fetch Sync Check from server
-      const FIVE_HOURS = 5 * 60 * 60 * 1000;
-
-      const lastSyncCheck = localStorage.getItem("lastSyncCheck");
-      let syncInfo = null;
-      if (!lastSyncCheck || Date.now() - Number(lastSyncCheck) > FIVE_HOURS) {
-        syncInfo = await apiService.getSyncCheck().catch((err) => {
-          console.error("Sync check failed:", err);
-          return null;
-        });
-        localStorage.setItem("lastSyncCheck", Date.now().toString());
-      }
-
-      // Helper to check if cache is valid
-      const isCacheValid = async (key: string, serverInfo: any) => {
-        if (!serverInfo) return false;
-        const localMeta = await db.meta.get(key);
-        return (
-          localMeta &&
-          localMeta.last_updated === serverInfo.last_updated &&
-          localMeta.count === serverInfo.count
-        );
-      };
-
-      // Helper to update meta
-      const updateMeta = async (key: string, serverInfo: any) => {
-        if (serverInfo) {
-          await db.meta.put({
-            key,
-            last_updated: serverInfo.last_updated,
-            count: serverInfo.count,
-          });
-        }
-      };
-
-      // -- A. NEWS --
-      let finalNews: any[] = [];
-      const newsValid = await isCacheValid("news", syncInfo?.news);
-      if (newsValid) {
-        finalNews = await db.news.toArray();
+    if (activeHomeDataPromise) {
+      if (force && !activeHomeDataPromiseIsForce) {
+        await activeHomeDataPromise;
       } else {
-        const res = await apiService.getNewsList({ page: 1, limit: 10 });
-        finalNews = res.news;
-        await db.news.clear();
-        if (finalNews.length > 0) {
-          await db.news.bulkAdd(
-            finalNews.map((item) => ({ ...item, id: String(item.page_id) }))
-          );
-        }
-        await updateMeta("news", syncInfo?.news);
+        return activeHomeDataPromise;
       }
-      setNewsPages(finalNews.slice(0, 5));
+    }
 
-      // -- B. CONTRIBUTORS / EDITORS --
-      let finalEditors: any[] = [];
-      const contributorsValid = await isCacheValid(
-        "contributors",
-        syncInfo?.contributors
-      );
-      if (contributorsValid) {
-        finalEditors = await db.contributors.toArray();
-      } else {
-        finalEditors = await apiService.getUsers();
-        await db.contributors.clear();
-        if (finalEditors.length > 0) {
-          await db.contributors.bulkAdd(
-            finalEditors.map((item) => ({ ...item, id: String(item.user_id) }))
-          );
-        }
-        await updateMeta("contributors", syncInfo?.contributors);
-      }
-      setEditors(finalEditors);
+    activeHomeDataPromiseIsForce = force;
+    activeHomeDataPromise = (async () => {
+      try {
+        setNewPageNumber(1);
+        setUpdatedPageNumber(1);
+        setPendingPageNumber(1);
 
-      // -- C. PENDING PAGES --
-      let finalPending: any[] = [];
-      const pendingValid = await isCacheValid(
-        "pendingpages",
-        syncInfo?.pendingpages
-      );
-      if (pendingValid) {
-        finalPending = await db.pendingpages.toArray();
-      } else {
-        const drafts = await apiService.getPendingDrafts(undefined, 10, 1);
-        finalPending = drafts.filter((d: any) => d.status === "in_review");
-        await db.pendingpages.clear();
-        if (finalPending.length > 0) {
-          await db.pendingpages.bulkAdd(
-            finalPending.map((item) => ({
-              ...item,
-              id: String(item.pending_id),
-            }))
-          );
-        }
-        await updateMeta("pendingpages", syncInfo?.pendingpages);
-      }
-      setPendingPages(finalPending.slice(0, 4));
-      setPendingPagesHasMore(finalPending.length > 4);
-
-      // -- D. UPDATED & NEW PAGES --
-      let finalNewPages: any[] = [];
-      let finalUpdatedPages: any[] = [];
-      const updatedValid = await isCacheValid(
-        "updatedpages",
-        syncInfo?.updatedpages
-      );
-      if (updatedValid) {
-        const cached = await db.updatedpages.toArray();
-        finalNewPages = cached.filter((p: any) => p._type === "new");
-        finalUpdatedPages = cached.filter((p: any) => p._type === "updated");
-      } else {
-        const [recentNew, recentUpdated] = await Promise.all([
-          apiService.getRecentNewPages(5, 1),
-          apiService.getRecentUpdatedPages(5, 1),
+        // 1. Load from Dexie immediately for Stale-While-Revalidate instant render
+        const [
+          cachedNews,
+          cachedEditors,
+          cachedPending,
+          cachedUpdated,
+          cachedBookmarks,
+        ] = await Promise.all([
+          db.news.toArray(),
+          db.contributors.toArray(),
+          db.pendingpages.toArray(),
+          db.updatedpages.toArray(),
+          db.bookmarks.toArray(),
         ]);
-        finalNewPages = recentNew;
-        finalUpdatedPages = recentUpdated;
 
-        await db.updatedpages.clear();
-        const toAdd = [
-          ...recentNew.map((p: any) => ({
-            ...p,
-            id: `new-${p.page_id}`,
-            _type: "new",
-          })),
-          ...recentUpdated.map((p: any) => ({
-            ...p,
-            id: `updated-${p.page_id}`,
-            _type: "updated",
-          })),
-        ];
-        if (toAdd.length > 0) {
-          await db.updatedpages.bulkAdd(toAdd);
+        setNewsPages(cachedNews.slice(0, 5));
+        setEditors(cachedEditors);
+        setPendingPages(cachedPending.slice(0, 4));
+        setPendingPagesHasMore(cachedPending.length > 4);
+
+        const cachedNewPages = cachedUpdated.filter((p: any) => p._type === "new");
+        const cachedUpdatedPages = cachedUpdated.filter((p: any) => p._type === "updated");
+        setNewPages(cachedNewPages.slice(0, 4));
+        setNewPagesHasMore(cachedNewPages.length > 4);
+        setUpdatedPages(cachedUpdatedPages.slice(0, 4));
+        setUpdatedPagesHasMore(cachedUpdatedPages.length > 4);
+
+        const cachedMerged = [...cachedNewPages, ...cachedUpdatedPages];
+        const cachedUniquePagesMap = new Map();
+        for (const page of cachedMerged) {
+          cachedUniquePagesMap.set(page.slug || page.page_id, page);
         }
-        await updateMeta("updatedpages", syncInfo?.updatedpages);
-      }
-      setNewPages(finalNewPages.slice(0, 4));
-      setNewPagesHasMore(finalNewPages.length > 4);
-      setUpdatedPages(finalUpdatedPages.slice(0, 4));
-      setUpdatedPagesHasMore(finalUpdatedPages.length > 4);
+        const cachedUniquePages = Array.from(cachedUniquePagesMap.values());
 
-      // Set count from sync check info (or fallback to local cached count if offline)
-      if (syncInfo?.updatedpages?.count !== undefined) {
-        setTotalPagesCount(syncInfo.updatedpages.count);
-      } else {
+        const cachedTrivia = cachedUniquePages
+          .filter((p: any) => {
+            return (
+              p.metadata &&
+              typeof p.metadata === "object" &&
+              (p.metadata as any).category?.toLowerCase() === "trivia"
+            );
+          })
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+            const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+            return dateB - dateA;
+          });
+        setTriviaPages(cachedTrivia);
+
+        const cachedHistory = cachedUniquePages
+          .filter((p: any) => {
+            return (
+              p.metadata &&
+              typeof p.metadata === "object" &&
+              (p.metadata as any).category?.toLowerCase() === "history"
+            );
+          })
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+            const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+            return dateB - dateA;
+          });
+        setHistoryPages(cachedHistory);
+
+        let finalBookmarks = cachedBookmarks;
+        if (finalBookmarks.length === 0 && !user) {
+          const defaultBookmarks = [
+            {
+              id: "1",
+              title: "Computer Science & Engineering",
+              category: "departments",
+              slug: "computer-science",
+              description:
+                "A leading department focused on AI, machine learning, systems, theory, and cryptography.",
+            },
+            {
+              id: "2",
+              title: "Amalthea",
+              category: "fests",
+              slug: "amalthea",
+              description:
+                "IITGN's annual technical summit showcasing innovations, technical contests, and guest lectures.",
+            },
+            {
+              id: "3",
+              title: "CS 101: Introduction to Computing",
+              category: "courses",
+              slug: "cs-101",
+              description:
+                "A foundational course introducing algorithms, Python programming, and computational thinking.",
+            },
+            {
+              id: "4",
+              title: "The Coding Club",
+              category: "clubs",
+              slug: "coding-club",
+              description:
+                "The premier student tech hub for developers, competitive programmers, and designers.",
+            },
+            {
+              id: "5",
+              title: "Cognitive Science Laboratory",
+              category: "research",
+              slug: "cognitive-science-lab",
+              description:
+                "Interdisciplinary research combining neuroscience, psychology, and artificial intelligence.",
+            },
+            {
+              id: "6",
+              title: "Grading Policy",
+              category: "policies",
+              slug: "grading-policy",
+              description:
+                "Details on letter grades, cumulative performance indices (CPI), and minimum passing scores.",
+            },
+          ];
+          await db.bookmarks.bulkAdd(defaultBookmarks);
+          finalBookmarks = defaultBookmarks;
+        }
+        setBookmarks(finalBookmarks);
+
         const metaInfo = await db.meta.get("updatedpages");
         if (metaInfo && typeof metaInfo.count === "number") {
           setTotalPagesCount(metaInfo.count);
         }
-      }
 
-      // Merge and filter trivia & history from loaded pages
-      const merged = [...finalNewPages, ...finalUpdatedPages];
-      const uniquePagesMap = new Map();
-      for (const page of merged) {
-        uniquePagesMap.set(page.slug || page.page_id, page);
-      }
-      const uniquePages = Array.from(uniquePagesMap.values());
+        // 2. Fetch or reuse sync check
+        const FIVE_HOURS = 5 * 60 * 60 * 1000;
+        let syncInfo: any = null;
+        let cacheValid = false;
+        const cachedSyncStr = localStorage.getItem("syncCheck");
 
-      const filteredTrivia = uniquePages.filter((p: any) => {
-        return (
-          p.metadata &&
-          typeof p.metadata === "object" &&
-          (p.metadata as any).category?.toLowerCase() === "trivia"
-        );
-      });
-      filteredTrivia.sort((a: any, b: any) => {
-        const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
-        const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
-        return dateB - dateA;
-      });
-      setTriviaPages(filteredTrivia);
-
-      const filteredHistory = uniquePages.filter((p: any) => {
-        return (
-          p.metadata &&
-          typeof p.metadata === "object" &&
-          (p.metadata as any).category?.toLowerCase() === "history"
-        );
-      });
-      filteredHistory.sort((a: any, b: any) => {
-        const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
-        const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
-        return dateB - dateA;
-      });
-      setHistoryPages(filteredHistory);
-
-      // -- E. BOOKMARKS SYNC --
-      const bookmarksValid = await isCacheValid(
-        "bookmarks",
-        syncInfo?.bookmarks
-      );
-      if (!bookmarksValid && syncInfo?.bookmarks) {
-        try {
-          const serverBookmarks = await apiService.getBookmarksList();
-          await db.bookmarks.clear();
-          if (serverBookmarks.length > 0) {
-            await db.bookmarks.bulkAdd(serverBookmarks);
+        if (cachedSyncStr && !force) {
+          try {
+            const parsed = JSON.parse(cachedSyncStr);
+            const cachedUserId = parsed.user_id;
+            const currentUserId = user?.user_id || null;
+            if (
+              cachedUserId === currentUserId &&
+              Date.now() - parsed.timestamp < FIVE_HOURS
+            ) {
+              syncInfo = parsed.data;
+              cacheValid = true;
+            }
+          } catch (e) {
+            console.error("Failed to parse cached syncCheck:", e);
           }
-          await updateMeta("bookmarks", syncInfo?.bookmarks);
-        } catch (e) {
-          console.error("Failed to sync bookmarks:", e);
         }
-      }
 
-      let cachedBookmarks = await db.bookmarks.toArray();
-      if (cachedBookmarks.length === 0 && !user) {
-        // First load guest default bookmarks
-        const defaultBookmarks = [
-          {
-            id: "1",
-            title: "Computer Science & Engineering",
-            category: "departments",
-            slug: "computer-science",
-            description:
-              "A leading department focused on AI, machine learning, systems, theory, and cryptography.",
-          },
-          {
-            id: "2",
-            title: "Amalthea",
-            category: "fests",
-            slug: "amalthea",
-            description:
-              "IITGN's annual technical summit showcasing innovations, technical contests, and guest lectures.",
-          },
-          {
-            id: "3",
-            title: "CS 101: Introduction to Computing",
-            category: "courses",
-            slug: "cs-101",
-            description:
-              "A foundational course introducing algorithms, Python programming, and computational thinking.",
-          },
-          {
-            id: "4",
-            title: "The Coding Club",
-            category: "clubs",
-            slug: "coding-club",
-            description:
-              "The premier student tech hub for developers, competitive programmers, and designers.",
-          },
-          {
-            id: "5",
-            title: "Cognitive Science Laboratory",
-            category: "research",
-            slug: "cognitive-science-lab",
-            description:
-              "Interdisciplinary research combining neuroscience, psychology, and artificial intelligence.",
-          },
-          {
-            id: "6",
-            title: "Grading Policy",
-            category: "policies",
-            slug: "grading-policy",
-            description:
-              "Details on letter grades, cumulative performance indices (CPI), and minimum passing scores.",
-          },
+        if (cacheValid) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          syncInfo = await apiService.getSyncCheck();
+          localStorage.setItem(
+            "syncCheck",
+            JSON.stringify({
+              timestamp: Date.now(),
+              user_id: user?.user_id || null,
+              data: syncInfo,
+            })
+          );
+        } catch (err) {
+          console.error("Sync check failed:", err);
+          if (cachedSyncStr) {
+            try {
+              syncInfo = JSON.parse(cachedSyncStr).data;
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+
+        if (!syncInfo) {
+          setLoading(false);
+          return;
+        }
+
+        // 3. Sync each collection using the reusable loadCachedCollection helper
+        const syncPromises: Promise<any>[] = [
+          loadCachedCollection({
+            key: "news",
+            table: db.news,
+            serverInfo: syncInfo.news,
+            fetcher: () => apiService.getNewsList({ page: 1, limit: 10 }),
+            mapper: (res: any) =>
+              res.news.map((item: any) => ({ ...item, id: String(item.page_id) })),
+            onDataLoaded: (data) => {
+              setNewsPages(data.slice(0, 5));
+            },
+            forceRefresh: force,
+          }),
+
+          loadCachedCollection({
+            key: "contributors",
+            table: db.contributors,
+            serverInfo: syncInfo.contributors,
+            fetcher: () => apiService.getUsers(),
+            mapper: (data: any[]) =>
+              data.map((item: any) => ({ ...item, id: String(item.user_id) })),
+            onDataLoaded: (data) => {
+              setEditors(data);
+            },
+            forceRefresh: force,
+          }),
+
+          loadCachedCollection({
+            key: "pendingpages",
+            table: db.pendingpages,
+            serverInfo: syncInfo.pendingpages,
+            fetcher: () => apiService.getPendingDrafts(undefined, 10, 1),
+            mapper: (drafts: any[]) =>
+              drafts
+                .filter((d: any) => d.status === "in_review")
+                .map((item: any) => ({ ...item, id: String(item.pending_id) })),
+            onDataLoaded: (data) => {
+              setPendingPages(data.slice(0, 4));
+              setPendingPagesHasMore(data.length > 4);
+            },
+            forceRefresh: force,
+          }),
+
+          loadCachedCollection({
+            key: "updatedpages",
+            table: db.updatedpages,
+            serverInfo: syncInfo.updatedpages,
+            fetcher: async () => {
+              const [recentNew, recentUpdated] = await Promise.all([
+                apiService.getRecentNewPages(5, 1),
+                apiService.getRecentUpdatedPages(5, 1),
+              ]);
+              return { recentNew, recentUpdated };
+            },
+            mapper: (data: { recentNew: any[]; recentUpdated: any[] }) => [
+              ...data.recentNew.map((p: any) => ({
+                ...p,
+                id: `new-${p.page_id}`,
+                _type: "new",
+              })),
+              ...data.recentUpdated.map((p: any) => ({
+                ...p,
+                id: `updated-${p.page_id}`,
+                _type: "updated",
+              })),
+            ],
+            onDataLoaded: (data) => {
+              const finalNewPages = data.filter((p: any) => p._type === "new");
+              const finalUpdatedPages = data.filter((p: any) => p._type === "updated");
+
+              setNewPages(finalNewPages.slice(0, 4));
+              setNewPagesHasMore(finalNewPages.length > 4);
+              setUpdatedPages(finalUpdatedPages.slice(0, 4));
+              setUpdatedPagesHasMore(finalUpdatedPages.length > 4);
+
+              const merged = [...finalNewPages, ...finalUpdatedPages];
+              const uniquePagesMap = new Map();
+              for (const page of merged) {
+                uniquePagesMap.set(page.slug || page.page_id, page);
+              }
+              const uniquePages = Array.from(uniquePagesMap.values());
+
+              const filteredTrivia = uniquePages
+                .filter((p: any) => {
+                  return (
+                    p.metadata &&
+                    typeof p.metadata === "object" &&
+                    (p.metadata as any).category?.toLowerCase() === "trivia"
+                  );
+                })
+                .sort((a: any, b: any) => {
+                  const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+                  const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+                  return dateB - dateA;
+                });
+              setTriviaPages(filteredTrivia);
+
+              const filteredHistory = uniquePages
+                .filter((p: any) => {
+                  return (
+                    p.metadata &&
+                    typeof p.metadata === "object" &&
+                    (p.metadata as any).category?.toLowerCase() === "history"
+                  );
+                })
+                .sort((a: any, b: any) => {
+                  const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+                  const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+                  return dateB - dateA;
+                });
+              setHistoryPages(filteredHistory);
+            },
+            forceRefresh: force,
+          }),
         ];
-        await db.bookmarks.bulkAdd(defaultBookmarks);
-        cachedBookmarks = defaultBookmarks;
+
+        if (user) {
+          syncPromises.push(
+            loadCachedCollection({
+              key: "bookmarks",
+              table: db.bookmarks,
+              serverInfo: syncInfo.bookmarks,
+              fetcher: () => apiService.getBookmarksList(),
+              onDataLoaded: (data) => {
+                setBookmarks(data);
+              },
+              forceRefresh: force,
+            })
+          );
+        }
+
+        await Promise.all(syncPromises);
+
+        if (syncInfo.updatedpages?.count !== undefined) {
+          setTotalPagesCount(syncInfo.updatedpages.count);
+        }
+      } catch (err) {
+        console.error("Error loading home page activity lists:", err);
+      } finally {
+        setLoading(false);
       }
-      setBookmarks(cachedBookmarks);
-    } catch (err) {
-      console.error("Error loading home page activity lists:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    })();
+
+    return activeHomeDataPromise;
+  }, [user, setTotalPagesCount]);
 
   const loadMoreNewPages = async () => {
     try {
@@ -402,9 +477,16 @@ export default function HomePage() {
     }
   };
 
+  const lastUserRef = useRef<string | null>(null);
   useEffect(() => {
-    loadHomeData();
-  }, []);
+    if (authLoading || auth === null) return;
+
+    const currentUserId = user ? String(user.user_id) : "guest";
+    if (lastUserRef.current !== currentUserId) {
+      lastUserRef.current = currentUserId;
+      loadHomeData();
+    }
+  }, [user, auth, authLoading, loadHomeData]);
 
   const handleReview = async (
     pendingId: number,
@@ -420,7 +502,7 @@ export default function HomePage() {
       alert(
         `Draft ${action === "approve" ? "approved and published" : "rejected"} successfully!`
       );
-      loadHomeData();
+      loadHomeData({ forceRefresh: true });
     } catch (err: any) {
       console.error(err);
       alert(`Error: ${err.message || "Failed to process review"}`);
@@ -463,7 +545,7 @@ ${newNewsContent}`,
       setNewNewsTitle("");
       setNewNewsContent("");
       setShowAddNewsForm(false);
-      loadHomeData();
+      loadHomeData({ forceRefresh: true });
     } catch (err: any) {
       console.error(err);
       alert(`Error submitting news: ${err.message || "Failed to submit"}`);
@@ -508,7 +590,7 @@ ${newTriviaContent}`,
       setNewTriviaTitle("");
       setNewTriviaContent("");
       setShowAddTriviaForm(false);
-      loadHomeData();
+      loadHomeData({ forceRefresh: true });
     } catch (err: any) {
       console.error(err);
       alert(`Error submitting trivia: ${err.message || "Failed to submit"}`);
@@ -555,7 +637,7 @@ ${newHistoryContent}`,
       setNewHistoryContent("");
       setNewHistoryVideoUrl("");
       setShowAddHistoryForm(false);
-      loadHomeData();
+      loadHomeData({ forceRefresh: true });
     } catch (err: any) {
       console.error(err);
       alert(`Error submitting history: ${err.message || "Failed to submit"}`);
