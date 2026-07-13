@@ -117,7 +117,7 @@ export default function HomePage() {
       if (newsValid) {
         finalNews = await db.news.toArray();
       } else {
-        const res = await apiService.getNewsList({ page: 1, limit: 100 });
+        const res = await apiService.getNewsList({ page: 1, limit: 10 });
         finalNews = res.news;
         await db.news.clear();
         if (finalNews.length > 0) {
@@ -148,7 +148,7 @@ export default function HomePage() {
       if (pendingValid) {
         finalPending = await db.pendingpages.toArray();
       } else {
-        const drafts = await apiService.getPendingDrafts(undefined, 100, 1);
+        const drafts = await apiService.getPendingDrafts(undefined, 10, 1);
         finalPending = drafts.filter((d: any) => d.status === "in_review");
         await db.pendingpages.clear();
         if (finalPending.length > 0) {
