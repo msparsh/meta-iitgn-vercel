@@ -27,3 +27,13 @@ This repository contains the complete codebase, logically separated into the use
 ## 📖 Documentation
 
 For comprehensive project details, architecture overviews, and detailed setup instructions, please visit the **[Meta IITGN GitHub Wiki](https://github.com/Metis-IITGandhinagar/meta-iitgn/wiki)**.
+
+
+
+## ❤️ Contributors
+
+<a href="https://github.com/Metis-IITGandhinagar/meta-iitgn/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Metis-IITGandhinagar/meta-iitgn" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
