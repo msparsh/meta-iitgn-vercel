@@ -61,7 +61,6 @@ export default function HomePage() {
     pendingPagesHasMore,
 
     // Active overlay items/form states
-    setActiveNewsItem,
     activeTriviaItem,
     setActiveTriviaItem,
     showAddTriviaForm,
@@ -420,7 +419,6 @@ export default function HomePage() {
                 getRelativeTime={getRelativeTime}
                 newsPages={newsPages}
                 setShowAllNews={(val) => setActiveOverlay(val ? "news" : null)}
-                setActiveNewsItem={setActiveNewsItem}
                 triviaPages={triviaPages}
                 setShowAllTrivia={(val) => setActiveOverlay(val ? "trivia" : null)}
                 setActiveTriviaItem={setActiveTriviaItem}
