@@ -141,6 +141,22 @@ Table audit_logs [headercolor: #175e7a] {
   }
 }
 
+// --- NEW: CAMPUS NEWS ---
+Table news [headercolor: #175e7a] {
+  news_id integer [ pk, increment, not null ]
+  title varchar [ not null ]
+  slug varchar [ not null, unique ]
+  content text [ not null ]
+  video_url varchar
+  created_at timestamp [ not null, default: `now()` ]
+  updated_at timestamp [ not null, default: `now()` ]
+  deleted_at timestamp
+
+  indexes {
+    (slug) [ name: 'news_index_0' ]
+  }
+}
+
 
 // --- RELATIONSHIPS ---
 

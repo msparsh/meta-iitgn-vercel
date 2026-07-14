@@ -39,3 +39,9 @@ export const deleteNews = async (slug: string): Promise<{ success: boolean; mess
   const response = await api.delete(`/news/${slug}`, { withCredentials: true });
   return response.data;
 };
+
+export const getNewsBySlug = async (slug: string): Promise<NewsItem> => {
+  const response = await api.get(`/news/${slug}`);
+  return response.data;
+};
+

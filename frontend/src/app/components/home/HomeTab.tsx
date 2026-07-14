@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Award,
   ArrowRight,
@@ -36,7 +35,6 @@ interface HomeTabProps {
   getRelativeTime: (dateString: string) => string;
   newsPages: any[];
   setShowAllNews: (show: boolean) => void;
-  setActiveNewsItem: (item: any) => void;
   triviaPages: any[];
   setShowAllTrivia: (show: boolean) => void;
   setActiveTriviaItem: (item: any) => void;
@@ -63,7 +61,6 @@ export default function HomeTab({
   getRelativeTime,
   newsPages,
   setShowAllNews,
-  setActiveNewsItem,
   triviaPages,
   setShowAllTrivia,
   setActiveTriviaItem,
@@ -213,13 +210,10 @@ export default function HomeTab({
                   const colorClass = colors[index % colors.length];
 
                   return (
-                    <div
+                    <Link
                       key={`news-${item.slug || index}`}
-                      onClick={() => {
-                        setActiveNewsItem(item);
-                        setShowAllNews(true);
-                      }}
-                      className="flex items-start gap-3 border-b border-base-200 pb-3 last:border-b-0 last:pb-0 cursor-pointer group"
+                      href={`/wiki/news/${item.slug}`}
+                      className="flex items-start gap-3 border-b border-base-200 pb-3 last:border-b-0 last:pb-0 cursor-pointer group text-left"
                     >
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
                         <IconComponent className="h-4.5 w-4.5" />
@@ -232,7 +226,7 @@ export default function HomeTab({
                           {getRelativeTime(item.created_at)}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

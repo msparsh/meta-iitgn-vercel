@@ -561,26 +561,10 @@ export const deletePage = async (req: Request, res: Response) => {
  */
 export const getSyncCheck = async (req: Request, res: Response) => {
   try {
-    // 1. news last updated (filter metadata category: news)
+    // 1. news last updated
     if (!syncCheckCache.news) {
-      const newsItems = await prisma.live_pages.findMany({
-        where: {
-          deleted_at: null,
-          OR: [
-            {
-              metadata: {
-                path: ['category'],
-                equals: 'news'
-              }
-            },
-            {
-              metadata: {
-                path: ['category'],
-                equals: 'News'
-              }
-            }
-          ]
-        },
+      const newsItems = await prisma.news.findMany({
+        where: { deleted_at: null },
         select: { updated_at: true }
       });
       
