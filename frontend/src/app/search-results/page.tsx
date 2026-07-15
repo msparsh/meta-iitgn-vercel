@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useEffect, useMemo } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiService } from "@/api";
@@ -82,27 +82,57 @@ function SearchResultsContent() {
   const [category, setCategory] = useState(categoryParam);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [dynamicCategories, setDynamicCategories] = useState<string[]>(["All"]);
 
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true);
       try {
-        const data = await apiService.searchPages(queryParam);
-        setResults(data);
+        const data = await apiService.searchPages(queryParam, 1, 6, category);
+        setResults(data.results || []);
+        setTotal(data.total || 0);
+        setHasMore(data.hasMore || false);
+        setDynamicCategories(data.categories || ["All"]);
+        setPage(1);
       } catch (err) {
         console.error("Failed to fetch search results:", err);
       } finally {
         setLoading(false);
       }
     };
-    if (queryParam) fetchResults();
-  }, [queryParam]);
+    if (queryParam) {
+      fetchResults();
+    } else {
+      setResults([]);
+      setTotal(0);
+      setHasMore(false);
+      setDynamicCategories(["All"]);
+    }
+  }, [queryParam, category]);
 
-  const filteredItems = results.filter((item) => {
-    const matchesCategory =
-      category === "All" || item.category.toLowerCase() === category.toLowerCase();
-    return matchesCategory;
-  });
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await apiService.searchPages(queryParam, nextPage, 6, category);
+      setResults((prev) => [...prev, ...(data.results || [])]);
+      setTotal(data.total || 0);
+      setHasMore(data.hasMore || false);
+      setPage(nextPage);
+      if (data.categories) {
+        setDynamicCategories(data.categories);
+      }
+    } catch (err) {
+      console.error("Failed to fetch more search results:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,18 +140,6 @@ function SearchResultsContent() {
     if (!q) return;
     router.push(`/search-results?query=${encodeURIComponent(q)}&category=${category}`);
   };
-
-  const dynamicCategories = useMemo(() => {
-    const cats = new Set<string>();
-    cats.add("All");
-    results.forEach((item) => {
-      if (item.category) {
-        const cap = item.category.charAt(0).toUpperCase() + item.category.slice(1);
-        cats.add(cap);
-      }
-    });
-    return Array.from(cats);
-  }, [results]);
 
   useEffect(() => {
     const capCat = category.charAt(0).toUpperCase() + category.slice(1);
@@ -191,7 +209,7 @@ function SearchResultsContent() {
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
         <div className="flex items-center justify-between mb-4 select-none">
           <p className="text-[10px] font-black text-base-content/50 uppercase tracking-widest">
-            {loading ? "Searching…" : `${filteredItems.length} result${filteredItems.length !== 1 ? "s" : ""} found`}
+            {loading ? "Searching…" : `${total} result${total !== 1 ? "s" : ""} found`}
           </p>
           {queryParam && (
             <p className="text-[10px] font-semibold text-base-content/40">
@@ -204,39 +222,60 @@ function SearchResultsContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[1,2,3,4].map(i => <SearchResultSkeleton key={i} />)}
           </div>
-        ) : filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredItems.map((item) => {
-              const colors = CATEGORY_COLOR_MAP[item.category] || {
-                bg: "bg-base-200",
-                text: "text-base-content/70",
-                border: "border-base-300",
-              };
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className="p-5 bg-base-100 border border-base-200 hover:border-primary/30 rounded-2xl flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group text-left cursor-pointer"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3.5">
-                      <span className={`text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-lg border ${colors.bg} ${colors.text} ${colors.border}`}>
-                        {item.category}
-                      </span>
-                      {item.is_pending && (
-                        <span className="badge badge-warning badge-xs">Pending</span>
-                      )}
+        ) : results.length > 0 ? (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {results.map((item) => {
+                const colors = CATEGORY_COLOR_MAP[item.category] || {
+                  bg: "bg-base-200",
+                  text: "text-base-content/70",
+                  border: "border-base-300",
+                };
+                return (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className="p-5 bg-base-100 border border-base-200 hover:border-primary/30 rounded-2xl flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group text-left cursor-pointer"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-3.5">
+                        <span className={`text-[9px] uppercase font-black tracking-wider px-2.5 py-0.5 rounded-lg border ${colors.bg} ${colors.text} ${colors.border}`}>
+                          {item.category}
+                        </span>
+                        {item.is_pending && (
+                          <span className="badge badge-warning badge-xs">Pending</span>
+                        )}
+                      </div>
+                      <h4 className="text-sm font-semibold text-base-content group-hover:text-primary transition-colors leading-snug">
+                        {highlightText(item.title, queryParam)}
+                      </h4>
+                      <p className="text-xs text-base-content/50 leading-relaxed mt-2 line-clamp-3">
+                        {highlightText(item.description, queryParam)}
+                      </p>
                     </div>
-                    <h4 className="text-sm font-semibold text-base-content group-hover:text-primary transition-colors leading-snug">
-                      {highlightText(item.title, queryParam)}
-                    </h4>
-                    <p className="text-xs text-base-content/50 leading-relaxed mt-2 line-clamp-3">
-                      {highlightText(item.description, queryParam)}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {hasMore && (
+              <div className="flex justify-center">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="btn btn-primary btn-sm rounded-xl px-6 font-bold cursor-pointer hover:scale-102 active:scale-98 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {loadingMore ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Load More"
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-16 text-center select-none border border-dashed border-base-300 rounded-2xl bg-base-200/50 max-w-md mx-auto">

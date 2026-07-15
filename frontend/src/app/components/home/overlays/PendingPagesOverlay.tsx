@@ -186,7 +186,7 @@ export default function PendingPagesOverlay({
 
                 return (
                   <div
-                    key={pending.pending_id}
+                    key={pending.pending_id+1}
                     className="p-5 border border-base-300 bg-base-100 rounded-2xl shadow-xs hover:shadow-md transition-all duration-150 relative text-left"
                   >
                     <div className="flex items-start gap-4">

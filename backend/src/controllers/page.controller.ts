@@ -20,14 +20,24 @@ let syncCheckCache: {
   contributors: { last_updated: number; count: number } | null;
   pendingpages: { last_updated: number; count: number } | null;
   updatedpages: { last_updated: number; count: number } | null;
+  featured: { last_updated: number; count: number } | null;
+  events: { last_updated: number; count: number } | null;
+  messmenu: { last_updated: number; count: number } | null;
+  transport: { last_updated: number; count: number } | null;
+  popular: { last_updated: number; count: number } | null;
 } = {
   news: null,
   contributors: null,
   pendingpages: null,
-  updatedpages: null
+  updatedpages: null,
+  featured: null,
+  events: null,
+  messmenu: null,
+  transport: null,
+  popular: null
 };
 
-export const invalidateSyncCache = (key?: 'news' | 'contributors' | 'pendingpages' | 'updatedpages') => {
+export const invalidateSyncCache = (key?: 'news' | 'contributors' | 'pendingpages' | 'updatedpages' | 'featured' | 'events' | 'messmenu' | 'transport' | 'popular') => {
   if (key) {
     syncCheckCache[key] = null;
   } else {
@@ -35,6 +45,11 @@ export const invalidateSyncCache = (key?: 'news' | 'contributors' | 'pendingpage
     syncCheckCache.contributors = null;
     syncCheckCache.pendingpages = null;
     syncCheckCache.updatedpages = null;
+    syncCheckCache.featured = null;
+    syncCheckCache.events = null;
+    syncCheckCache.messmenu = null;
+    syncCheckCache.transport = null;
+    syncCheckCache.popular = null;
   }
 };
 
@@ -112,17 +127,21 @@ export const getRecentUpdatedPages = async (req: Request, res: Response) => {
 export const searchPages = async (req: Request, res: Response) => {
   try {
     const query = ((req.query.query as string) || '').trim();
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 6;
+    const category = ((req.query.category as string) || 'All').trim();
 
     if (!query) {
-      return res.json([]);
+      return res.json({ results: [], total: 0, hasMore: false });
     }
+
+    let resultsToPaginate: any[];
 
     const cached = searchCache.get(query);
     if (cached && cached.expiry > Date.now()) {
-      return res.json(cached.data);
-    }
-
-    const isLoggedIn = !!(req.user && req.user.user_id);
+      resultsToPaginate = cached.data;
+    } else {
+      const isLoggedIn = !!(req.user && req.user.user_id);
 
     // 1. Fetch all live pages
     const livePages = await prisma.live_pages.findMany({
@@ -404,10 +423,34 @@ export const searchPages = async (req: Request, res: Response) => {
     }
 
     results.sort((a, b) => b.score - a.score);
-    const limitedResults = results.slice(0, 25).map(({ score, ...rest }) => rest);
+    resultsToPaginate = results.slice(0, 100);
 
-    searchCache.set(query, { data: limitedResults, expiry: Date.now() + SEARCH_CACHE_TTL });
-    return res.json(limitedResults);
+    searchCache.set(query, { data: resultsToPaginate, expiry: Date.now() + SEARCH_CACHE_TTL });
+  }
+
+  const categoryFiltered = resultsToPaginate.filter((item: any) => {
+    return category.toLowerCase() === 'all' || item.category.toLowerCase() === category.toLowerCase();
+  });
+
+  const offset = (page - 1) * limit;
+  const paginatedResults = categoryFiltered.slice(offset, offset + limit).map(({ score, ...rest }: any) => rest);
+
+  const availableCategories = Array.from(
+    new Set([
+      'All',
+      ...resultsToPaginate.map((item: any) => {
+        const cat = item.category || 'Campus';
+        return cat.charAt(0).toUpperCase() + cat.slice(1);
+      }),
+    ])
+  );
+
+  return res.json({
+    results: paginatedResults,
+    total: categoryFiltered.length,
+    hasMore: offset + limit < categoryFiltered.length,
+    categories: availableCategories,
+  });
   } catch (error: any) {
     console.error('Error in searchPages:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
@@ -647,6 +690,9 @@ export const createPage = async (req: Request, res: Response) => {
     invalidateSearchCache();
     invalidateSyncCache('updatedpages');
     invalidateSyncCache('news');
+    invalidateSyncCache('popular');
+    if (slug === 'mess-menu') invalidateSyncCache('messmenu');
+    if (slug === 'campus-transport') invalidateSyncCache('transport');
 
     return res.status(201).json(newPage);
   } catch (error: any) {
@@ -711,6 +757,9 @@ export const updatePage = async (req: Request, res: Response) => {
     invalidateSearchCache();
     invalidateSyncCache('updatedpages');
     invalidateSyncCache('news');
+    invalidateSyncCache('popular');
+    if (slug === 'mess-menu') invalidateSyncCache('messmenu');
+    if (slug === 'campus-transport') invalidateSyncCache('transport');
 
     return res.json(updatedPage);
   } catch (error: any) {
@@ -747,6 +796,9 @@ export const deletePage = async (req: Request, res: Response) => {
     invalidateSearchCache();
     invalidateSyncCache('updatedpages');
     invalidateSyncCache('news');
+    invalidateSyncCache('popular');
+    if (slug === 'mess-menu') invalidateSyncCache('messmenu');
+    if (slug === 'campus-transport') invalidateSyncCache('transport');
 
     return res.json({ success: true, message: 'Page soft-deleted successfully' });
   } catch (error: any) {
@@ -833,11 +885,68 @@ export const getSyncCheck = async (req: Request, res: Response) => {
       }
     }
 
+    // 6. featured pages
+    if (!syncCheckCache.featured) {
+      const featuredStats = await prisma.featured_pages.aggregate({
+        _max: { updated_at: true },
+        _count: { featured_id: true }
+      });
+      const featured_last_updated = featuredStats._max.updated_at ? featuredStats._max.updated_at.getTime() : 0;
+      syncCheckCache.featured = { last_updated: featured_last_updated, count: featuredStats._count.featured_id };
+    }
+
+    // 7. events
+    if (!syncCheckCache.events) {
+      const eventStats = await prisma.events.aggregate({
+        _max: { updated_at: true },
+        _count: { event_id: true },
+        where: { deleted_at: null }
+      });
+      const events_last_updated = eventStats._max.updated_at ? eventStats._max.updated_at.getTime() : 0;
+      syncCheckCache.events = { last_updated: events_last_updated, count: eventStats._count.event_id };
+    }
+
+    // 8. mess menu page
+    if (!syncCheckCache.messmenu) {
+      const page = await prisma.live_pages.findFirst({
+        where: { slug: 'mess-menu', deleted_at: null },
+        select: { updated_at: true }
+      });
+      const mess_last_updated = page ? page.updated_at.getTime() : 0;
+      syncCheckCache.messmenu = { last_updated: mess_last_updated, count: page ? 1 : 0 };
+    }
+
+    // 9. transport page
+    if (!syncCheckCache.transport) {
+      const page = await prisma.live_pages.findFirst({
+        where: { slug: 'campus-transport', deleted_at: null },
+        select: { updated_at: true }
+      });
+      const transport_last_updated = page ? page.updated_at.getTime() : 0;
+      syncCheckCache.transport = { last_updated: transport_last_updated, count: page ? 1 : 0 };
+    }
+
+    // 10. popular pages (live_pages count/max updated_at)
+    if (!syncCheckCache.popular) {
+      const popularStats = await prisma.live_pages.aggregate({
+        _max: { updated_at: true },
+        _count: { page_id: true },
+        where: { deleted_at: null }
+      });
+      const popular_last_updated = popularStats._max.updated_at ? popularStats._max.updated_at.getTime() : 0;
+      syncCheckCache.popular = { last_updated: popular_last_updated, count: popularStats._count.page_id };
+    }
+
     return res.json({
       news: syncCheckCache.news,
       contributors: syncCheckCache.contributors,
       pendingpages: syncCheckCache.pendingpages,
       updatedpages: syncCheckCache.updatedpages,
+      featured: syncCheckCache.featured,
+      events: syncCheckCache.events,
+      messmenu: syncCheckCache.messmenu,
+      transport: syncCheckCache.transport,
+      popular: syncCheckCache.popular,
       bookmarks: { last_updated: bookmarks_last_updated, count: bookmarks_count }
     });
   } catch (error: any) {
@@ -878,7 +987,7 @@ export const getPopularPages = async (req: Request, res: Response) => {
  */
 export const incrementViewCount = async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
     await prisma.live_pages.updateMany({
       where: { slug, deleted_at: null },
       data: { view_count: { increment: 1 } },
@@ -940,10 +1049,11 @@ export const setFeaturedPage = async (req: Request, res: Response) => {
     if (!page_id) return res.status(400).json({ success: false, error: { code: 'MISSING_PAGE_ID', message: 'page_id is required' } });
 
     const result = await prisma.featured_pages.upsert({
-      where: { unique_featured_page: { page_id: Number(page_id) } },
+      where: { page_id: Number(page_id) },
       update: { order, tag, location, description },
       create: { page_id: Number(page_id), order, tag, location, description },
     });
+    invalidateSyncCache('featured');
     return res.json({ success: true, data: result });
   } catch (error: any) {
     console.error('Error in setFeaturedPage:', error);
@@ -959,6 +1069,7 @@ export const removeFeaturedPage = async (req: Request, res: Response) => {
   try {
     const { featured_id } = req.params;
     await prisma.featured_pages.delete({ where: { featured_id: Number(featured_id) } });
+    invalidateSyncCache('featured');
     return res.json({ success: true });
   } catch (error: any) {
     console.error('Error in removeFeaturedPage:', error);

@@ -217,6 +217,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [
       { name: "Main Page", path: "/", iconName: "Home" },
       { name: "All Categories", path: "/wiki/categories", iconName: "Shuffle" },
+      { name: "Explore Blogs", path: "/blog", iconName: "BookOpen" },
     ],
   },
   {

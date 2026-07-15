@@ -3,6 +3,7 @@
 import React from "react";
 import { AuthProvider } from "@/context/AuthProvider";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { ProfileProvider } from "@/context/ProfileContext";
 
 import dynamic from "next/dynamic";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,8 +86,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
       <AuthProvider>
-        {children}
-        <SettingsModalTrigger />
+        <ProfileProvider>
+          {children}
+          <SettingsModalTrigger />
+        </ProfileProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

@@ -10,8 +10,8 @@ export const getRecentUpdatedPages = async (limit = 4, page = 1) => {
   return response.data;
 };
 
-export const searchPages = async (query: string) => {
-  const response = await api.get('/pages/search', { params: { query } });
+export const searchPages = async (query: string, page = 1, limit = 6, category = 'All') => {
+  const response = await api.get('/pages/search', { params: { query, page, limit, category } });
   return response.data;
 };
 
@@ -115,5 +115,31 @@ export const getMessMenu = async () => {
 
 export const getCampusTransport = async () => {
   const response = await api.get('/pages/special/campus-transport');
+  return response.data;
+};
+
+// Blogs endpoints
+export const getBlogs = async (params: { page?: number; limit?: number } = {}) => {
+  const response = await api.get('/blogs', { params });
+  return response.data;
+};
+
+export const getBlog = async (slug: string) => {
+  const response = await api.get(`/blogs/${slug}`);
+  return response.data;
+};
+
+export const createBlog = async (data: { title: string; description?: string; content?: string }) => {
+  const response = await api.post('/blogs', data, { withCredentials: true });
+  return response.data;
+};
+
+export const updateBlog = async (slug: string, data: { title?: string; description?: string; content?: string }) => {
+  const response = await api.put(`/blogs/${slug}`, data, { withCredentials: true });
+  return response.data;
+};
+
+export const deleteBlog = async (slug: string) => {
+  const response = await api.delete(`/blogs/${slug}`, { withCredentials: true });
   return response.data;
 };

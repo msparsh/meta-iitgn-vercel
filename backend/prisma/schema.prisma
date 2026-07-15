@@ -44,6 +44,8 @@ model users {
   media_assets            media_assets[]
   bookmarks               bookmarks[]
   audit_logs              audit_logs[]
+  blogs_authored          blogs[]                 @relation("BlogOriginalAuthor")
+  blogs_updated           blogs[]                 @relation("BlogUpdater")
 }
 
 model live_pages {
@@ -251,4 +253,24 @@ model events {
   deleted_at   DateTime?
 
   @@index([event_date], name: "events_date_index")
+}
+
+model blogs {
+  blog_id            Int       @id @default(autoincrement())
+  title              String
+  description        String?
+  slug               String    @unique
+  content            String?   // Stores Tiptap JSON content serialized as a string
+  original_author_id Int
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now()) @updatedAt
+  updated_by         Int?
+  deleted_at         DateTime?
+  view_count         Int       @default(0)
+
+  // Relations
+  original_author    users     @relation("BlogOriginalAuthor", fields: [original_author_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  updater            users?    @relation("BlogUpdater", fields: [updated_by], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([slug], name: "blogs_index_0")
 }
