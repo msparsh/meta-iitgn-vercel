@@ -7,11 +7,11 @@ import {
   Bookmark as BookmarkIcon,
   Home,
   User,
-  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeStore } from "@/store/useHomeStore";
 import BottomNavbar from "@/components/BottomNavbar";
+import Loading from "./loading";
 
 // Subcomponents
 import LeftPanel from "./components/home/LeftPanel";
@@ -27,6 +27,8 @@ import NewsOverlay from "./components/home/overlays/NewsOverlay";
 import TriviaOverlay from "./components/home/overlays/TriviaOverlay";
 import HistoryOverlay from "./components/home/overlays/HistoryOverlay";
 import EditorsOverlay from "./components/home/overlays/EditorsOverlay";
+
+let initialLoadDone = false;
 
 export default function HomePage() {
   const {
@@ -112,10 +114,12 @@ export default function HomePage() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [mobileNavHidden, setMobileNavHidden] = useState(false);
-  const [initialDelay, setInitialDelay] = useState(true);
+  const [initialDelay, setInitialDelay] = useState(!initialLoadDone);
 
   useEffect(() => {
+    if (initialLoadDone) return;
     const timer = setTimeout(() => {
+      initialLoadDone = true;
       setInitialDelay(false);
     }, 2000);
     return () => clearTimeout(timer);
@@ -399,7 +403,7 @@ export default function HomePage() {
   if (initialDelay || authLoading || auth === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-100">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <Loading />
       </div>
     );
   }
