@@ -10,8 +10,8 @@ export const getRecentUpdatedPages = async (limit = 4, page = 1) => {
   return response.data;
 };
 
-export const searchPages = async (query: string) => {
-  const response = await api.get('/pages/search', { params: { query } });
+export const searchPages = async (query: string, page = 1, limit = 6, category = 'All') => {
+  const response = await api.get('/pages/search', { params: { query, page, limit, category } });
   return response.data;
 };
 

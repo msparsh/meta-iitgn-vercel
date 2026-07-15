@@ -127,17 +127,21 @@ export const getRecentUpdatedPages = async (req: Request, res: Response) => {
 export const searchPages = async (req: Request, res: Response) => {
   try {
     const query = ((req.query.query as string) || '').trim();
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 6;
+    const category = ((req.query.category as string) || 'All').trim();
 
     if (!query) {
-      return res.json([]);
+      return res.json({ results: [], total: 0, hasMore: false });
     }
+
+    let resultsToPaginate: any[];
 
     const cached = searchCache.get(query);
     if (cached && cached.expiry > Date.now()) {
-      return res.json(cached.data);
-    }
-
-    const isLoggedIn = !!(req.user && req.user.user_id);
+      resultsToPaginate = cached.data;
+    } else {
+      const isLoggedIn = !!(req.user && req.user.user_id);
 
     // 1. Fetch all live pages
     const livePages = await prisma.live_pages.findMany({
@@ -419,10 +423,34 @@ export const searchPages = async (req: Request, res: Response) => {
     }
 
     results.sort((a, b) => b.score - a.score);
-    const limitedResults = results.slice(0, 25).map(({ score, ...rest }) => rest);
+    resultsToPaginate = results.slice(0, 100);
 
-    searchCache.set(query, { data: limitedResults, expiry: Date.now() + SEARCH_CACHE_TTL });
-    return res.json(limitedResults);
+    searchCache.set(query, { data: resultsToPaginate, expiry: Date.now() + SEARCH_CACHE_TTL });
+  }
+
+  const categoryFiltered = resultsToPaginate.filter((item: any) => {
+    return category.toLowerCase() === 'all' || item.category.toLowerCase() === category.toLowerCase();
+  });
+
+  const offset = (page - 1) * limit;
+  const paginatedResults = categoryFiltered.slice(offset, offset + limit).map(({ score, ...rest }: any) => rest);
+
+  const availableCategories = Array.from(
+    new Set([
+      'All',
+      ...resultsToPaginate.map((item: any) => {
+        const cat = item.category || 'Campus';
+        return cat.charAt(0).toUpperCase() + cat.slice(1);
+      }),
+    ])
+  );
+
+  return res.json({
+    results: paginatedResults,
+    total: categoryFiltered.length,
+    hasMore: offset + limit < categoryFiltered.length,
+    categories: availableCategories,
+  });
   } catch (error: any) {
     console.error('Error in searchPages:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });

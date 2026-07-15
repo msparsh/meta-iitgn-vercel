@@ -584,7 +584,7 @@ export default function HomeTab({
           title="Upcoming Events"
           icon={<Calendar className="h-4 w-4" />}
           accentColor="secondary"
-          badge={<span className="badge badge-primary badge-sm">This week</span>}
+          badge={<span className="badge badge-primary badge-sm rounded-2xl">This week</span>}
           footer={
             <Link href="/wiki/page/upcoming-events" className="btn btn-ghost btn-xs text-primary font-extrabold uppercase tracking-wider gap-1">
               All events <ArrowRight className="h-3.5 w-3.5" />
@@ -624,7 +624,7 @@ export default function HomeTab({
           title="Popular Pages"
           icon={<TrendingUp className="h-4 w-4" />}
           accentColor="primary"
-          badge={<span className="badge badge-secondary badge-sm">Trending</span>}
+          badge={<span className="badge badge-secondary badge-sm rounded-2xl">Trending</span>}
         >
           <div className="space-y-3">
             {dynamicDataLoading && popularPages.length === 0 ? (

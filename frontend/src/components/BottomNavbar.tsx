@@ -50,10 +50,10 @@ export default function BottomNavbar({
                 key={tab.id}
                 onClick={tab.onClick}
                 aria-label={tab.label}
-                className={`relative z-10 flex flex-1 items-center justify-center rounded-full px-3 py-2.5 transition-all duration-200 group active:scale-95 ${tab.colorClass ?? ""} ${
+                className={`relative z-10 flex flex-1 items-center justify-center rounded-full px-3 py-2.5 transition-all duration-200 group active:scale-95 ${
                   isActive
-                    ? `shadow-sm`
-                    : `text-base-content/70 hover:bg-base-200  hover:text-base-content`
+                    ? `${tab.colorClass ?? "bg-primary text-primary-content"} shadow-sm`
+                    : `${tab.colorClass ?? "text-base-content/70 hover:bg-base-200 hover:text-base-content"}`
                 }`}
               >
                 <span className="relative flex items-center justify-center">

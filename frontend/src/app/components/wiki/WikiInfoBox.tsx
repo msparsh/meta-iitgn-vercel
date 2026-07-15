@@ -47,7 +47,7 @@ export default function WikiInfoBox({
         <div
           onMouseDown={startResizeRight}
           onDoubleClick={handleRightDoubleClick}
-          className="hidden lg:block w-1.5 -mr-1 cursor-col-resize hover:bg-indigo-500/30 active:bg-indigo-500/50 transition-colors z-20 h-full shrink-0 order-2"
+          className="hidden lg:block w-1.5 -mr-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50 transition-colors z-20 h-full shrink-0 order-2"
           title="Drag to resize, double-click to reset"
         />
       )}
@@ -56,7 +56,7 @@ export default function WikiInfoBox({
       <aside
         style={{ width: rightSidebarOpen ? (isMobile ? "320px" : `${rightWidth}px`) : undefined }}
         className={`
-          border-l border-gray-200 shrink-0 overflow-y-auto overflow-x-hidden bg-white flex flex-col select-none right-sidebar-mobile-toggle no-scrollbar
+          border-l border-base-200 shrink-0 overflow-y-auto overflow-x-hidden bg-base-100 flex flex-col select-none right-sidebar-mobile-toggle no-scrollbar
           transition-transform duration-300 ease-in-out order-3
           fixed lg:relative top-16 lg:top-0 bottom-0 right-0 z-[10001] h-[calc(100vh-4rem)] lg:h-full
           ${
@@ -72,7 +72,7 @@ export default function WikiInfoBox({
           {rightSidebarOpen && (
             <button
               onClick={() => setRightSidebarOpen(false)}
-              className="lg:hidden absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg text-base-content/50 hover:text-base-content/80 transition-colors duration-200 cursor-pointer active:scale-95 z-50"
+              className="lg:hidden absolute top-4 right-4 p-1 hover:bg-base-200 rounded-lg text-base-content/50 hover:text-base-content/80 transition-colors duration-200 cursor-pointer active:scale-95 z-50"
               aria-label="Close Sidebar"
             >
               <X className="h-6 w-6 text-base-content" />
@@ -80,12 +80,12 @@ export default function WikiInfoBox({
           )}
           {/* Infobox Image */}
           <div
-            className={`w-full relative  ${isEditing?"mt-15":"mt-0"} bg-gray-50 border-b border-base-200 flex items-center justify-center overflow-hidden transition-all duration-300 shrink-0 ${
-              isEditing ? "h-32 p-4 bg-gray-50" : "aspect-square"
+            className={`w-full relative ${isEditing ? "mt-15" : "mt-0"} bg-base-200/50 border-b border-base-200 flex items-center justify-center overflow-hidden transition-all duration-300 shrink-0 ${
+              isEditing ? "h-32 p-4" : "aspect-square"
             }`}
           >
             <div className={`w-full h-full relative overflow-hidden transition-all duration-300 ${
-              isEditing ? "rounded-xl border border-gray-200 shadow-sm bg-white" : ""
+              isEditing ? "rounded-xl border border-base-300/80 shadow-sm bg-base-100" : ""
             }`}>
               {parsed.infobox.image ? (
                 <img
@@ -94,14 +94,14 @@ export default function WikiInfoBox({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="text-gray-300 text-sm font-medium absolute inset-0 flex items-center justify-center bg-gray-55">No Image</div>
+                <div className="text-base-content/30 text-sm font-medium absolute inset-0 flex items-center justify-center bg-base-200/50">No Image</div>
               )}
             </div>
           </div>
 
           {/* Description below image in read mode */}
           {parsed.infobox.description && !isEditing && (
-            <div className="px-6 py-4 border-b border-base-200 bg-gray-50/50">
+            <div className="px-6 py-4 border-b border-base-200 bg-base-200/30">
               <p className="text-xs text-base-content/60 italic leading-relaxed whitespace-pre-wrap">
                 {parsed.infobox.description}
               </p>
@@ -110,9 +110,9 @@ export default function WikiInfoBox({
 
           {/* Inline Image Editor Fields (In-place, only shown when editing) */}
           {isEditing && (
-            <div className="p-6 border-b border-base-200 flex flex-col gap-4 bg-gray-50 animate-in fade-in duration-300">
+            <div className="p-6 border-b border-base-200 flex flex-col gap-4 bg-base-200/50 animate-in fade-in duration-300">
               <div className="flex items-center justify-between">
-                <h4 className="text-[10px] font-bold text-gray-450 tracking-wider uppercase">
+                <h4 className="text-[10px] font-bold text-base-content/50 tracking-wider uppercase">
                   Image & Description Options
                 </h4>
                 {parsed.infobox.image && (
@@ -124,7 +124,7 @@ export default function WikiInfoBox({
                         imageAlt: "",
                       })
                     }
-                    className="text-rose-500 hover:text-rose-605 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    className="text-error hover:text-error/80 p-1.5 hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
                     title="Remove Image"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -147,7 +147,7 @@ export default function WikiInfoBox({
                     })
                   }
                   placeholder="https://example.com/image.jpg"
-                  className="w-full border border-gray-200 hover:border-gray-300 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-base-content placeholder-gray-400 bg-white focus:outline-none transition-all duration-150 shadow-sm"
+                  className="w-full border border-base-300 hover:border-base-content/30 focus:border-primary rounded-xl px-3 py-2 text-xs text-base-content placeholder-base-content/40 bg-base-100 focus:outline-none transition-all duration-150 shadow-sm"
                 />
               </div>
 
@@ -187,7 +187,7 @@ export default function WikiInfoBox({
                       alert(err.response?.data?.error || err.message || "Failed to upload image");
                     }
                   }}
-                  className="w-full border border-gray-200 hover:border-gray-300 focus:border-indigo-500 rounded-xl px-2 py-1 text-xs text-base-content bg-white focus:outline-none transition-all duration-150 shadow-sm file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                  className="w-full border border-base-300 hover:border-base-content/30 focus:border-primary rounded-xl px-2 py-1 text-xs text-base-content bg-base-100 focus:outline-none transition-all duration-150 shadow-sm file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                 />
               </div>
 
@@ -206,7 +206,7 @@ export default function WikiInfoBox({
                     })
                   }
                   placeholder="e.g. Campus View"
-                  className="w-full border border-gray-200 hover:border-gray-350 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-base-content placeholder-gray-400 bg-white focus:outline-none transition-all duration-150 shadow-sm"
+                  className="w-full border border-base-300 hover:border-base-content/30 focus:border-primary rounded-xl px-3 py-2 text-xs text-base-content placeholder-base-content/40 bg-base-100 focus:outline-none transition-all duration-150 shadow-sm"
                 />
               </div>
 
@@ -225,7 +225,7 @@ export default function WikiInfoBox({
                   }
                   placeholder="Enter a short description..."
                   rows={3}
-                  className="w-full border border-gray-200 hover:border-gray-350 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-base-content placeholder-gray-400 bg-white focus:outline-none transition-all duration-150 shadow-sm resize-none"
+                  className="w-full border border-base-300 hover:border-base-content/30 focus:border-primary rounded-xl px-3 py-2 text-xs text-base-content placeholder-base-content/40 bg-base-100 focus:outline-none transition-all duration-150 shadow-sm resize-none"
                 />
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function WikiInfoBox({
 
           {/* Infobox Fields Table */}
           <div className="p-6">
-            <h4 className="text-[10px] font-bold text-gray-450 tracking-wider mb-4 uppercase">
+            <h4 className="text-[10px] font-bold text-base-content/50 tracking-wider mb-4 uppercase">
               Key Information
             </h4>
             <table className="w-full text-xs text-base-content/80">
@@ -243,7 +243,7 @@ export default function WikiInfoBox({
                   return (
                     <tr
                       key={index}
-                      className={isLast ? "" : "border-b border-gray-50"}
+                      className={isLast ? "" : "border-b border-base-200/50"}
                     >
                       <td className="py-3 pr-2 align-top w-[35%]">
                         {isEditing ? (
@@ -261,7 +261,7 @@ export default function WikiInfoBox({
                               });
                             }}
                             placeholder="Label"
-                            className="w-full border border-gray-200 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-indigo-500 font-semibold text-base-content/80 uppercase tracking-wider bg-transparent"
+                            className="w-full border border-base-300 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-primary font-semibold text-base-content/80 uppercase tracking-wider bg-transparent"
                           />
                         ) : (
                           <span className="font-semibold text-base-content/50 uppercase tracking-wider">{row.label}</span>
@@ -289,7 +289,7 @@ export default function WikiInfoBox({
                                 });
                               }}
                               placeholder="Value (use comma for tags)"
-                              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 font-normal bg-transparent resize-none"
+                              className="w-full border border-base-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-primary font-normal bg-transparent resize-none"
                               as={row.type === "badge" ? "textarea" : "input"}
                             />
                             <button
@@ -318,8 +318,8 @@ export default function WikiInfoBox({
                               }}
                               className={`p-1 rounded cursor-pointer transition-colors ${
                                 row.type === "badge"
-                                  ? "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
-                                  : "text-base-content/50 hover:text-indigo-600 hover:bg-gray-50"
+                                  ? "text-primary bg-primary/10 hover:bg-primary/20"
+                                  : "text-base-content/50 hover:text-primary hover:bg-base-200"
                               }`}
                               title={`Toggle representation (currently: ${row.type === "badge" ? "Badges/Tags" : "Text line"}). Click to switch.`}
                             >
@@ -345,7 +345,7 @@ export default function WikiInfoBox({
                             {row.value.map((val) => (
                               <span
                                 key={val}
-                                className="text-[10px] text-indigo-600 border border-indigo-200 rounded-full px-2 py-0.5 font-semibold bg-indigo-50"
+                                className="text-[10px] text-primary border border-primary/20 rounded-full px-2 py-0.5 font-semibold bg-primary/10"
                               >
                                 {val}
                               </span>
@@ -375,7 +375,7 @@ export default function WikiInfoBox({
                     rows: newRows
                   });
                 }}
-                className="mt-4 w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-gray-200 hover:border-indigo-300 text-base-content/50 hover:text-indigo-600 rounded-lg text-xs font-semibold cursor-pointer transition-all duration-155 hover:bg-indigo-50/40"
+                className="mt-4 w-full flex items-center justify-center gap-1.5 py-2 border border-dashed border-base-300 hover:border-primary text-base-content/50 hover:text-primary rounded-lg text-xs font-semibold cursor-pointer transition-all duration-155 hover:bg-primary/5"
               >
                 <span>+ Add</span>
               </button>
@@ -397,7 +397,7 @@ export default function WikiInfoBox({
                         onClick={(e) => handleTocClick(e, item.id)}
                         className={`truncate flex-1 py-0.5 transition-all duration-150 ${
                           isActive
-                            ? "text-indigo-600 font-bold translate-x-1"
+                            ? "text-primary font-bold translate-x-1"
                             : "text-base-content/60 hover:text-base-content"
                         }`}
                       >
@@ -415,8 +415,8 @@ export default function WikiInfoBox({
                                 onClick={(e) => handleTocClick(e, sub.id)}
                                 className={`truncate block py-0.5 transition-all duration-150 ${
                                   isSubActive
-                                    ? "text-indigo-500 font-bold translate-x-0.5"
-                                    : "text-base-content/50 hover:text-gray-605"
+                                    ? "text-primary font-bold translate-x-0.5"
+                                    : "text-base-content/50 hover:text-base-content"
                                 }`}
                               >
                                 {index + 1}.{idx + 1} {sub.title}
