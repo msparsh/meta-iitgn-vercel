@@ -35,6 +35,7 @@ import { apiService } from "@/api";
 import { db } from "@/lib/db";
 import { useHomeStore } from "@/store/useHomeStore";
 import { useRouter } from "next/navigation";
+import { useProfile } from "@/context/ProfileContext";
 
 const DEV_ACCOUNTS = [
   { name: "Gold User A (Gold)", email: "gold1@meta-iitgn.edu", role: "admin" },
@@ -53,6 +54,7 @@ export default function ProfileContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { bookmarks, removeBookmark } = useHomeStore();
+  const { profileCache, setProfileData } = useProfile();
 
   const userIdParam = searchParams?.get("userId");
   const targetUserId = userIdParam ? Number(userIdParam) : currentUser?.user_id;
@@ -139,8 +141,19 @@ export default function ProfileContent() {
   useEffect(() => {
     if (!targetUserId) return;
 
+    // Check memory context cache first!
+    if (profileCache[targetUserId]) {
+      const cached = profileCache[targetUserId];
+      setProfileUser(cached.user);
+      setProfileStats(cached.stats);
+      setProfileReadme(cached.readme);
+      setRecentActivity(cached.activity);
+      setDataLoading(false);
+      return;
+    }
+
     const fetchProfileData = async () => {
-      // Try cache first
+      // Try IndexedDB cache second
       try {
         const cacheKey = `profile-data-${targetUserId}`;
         const cached = await db.cachedpages.get(cacheKey);
@@ -151,6 +164,8 @@ export default function ProfileContent() {
           setProfileReadme(parsedCache.readme);
           setRecentActivity(parsedCache.activity || []);
           setDataLoading(false);
+          // Store it in the memory context cache so next open reads from context immediately
+          setProfileData(targetUserId, parsedCache);
         }
       } catch (err) {
         console.error("Error reading profile cache:", err);
@@ -205,12 +220,17 @@ export default function ProfileContent() {
         }
         setProfileReadme(readme);
 
-        // Cache it
+        const freshData = { user: targetUser, stats, readme, activity };
+
+        // Save to memory context cache
+        setProfileData(targetUserId, freshData);
+
+        // Cache it in IndexedDB for offline support
         try {
           const cacheKey = `profile-data-${targetUserId}`;
           await db.cachedpages.put({
             slug: cacheKey,
-            content: JSON.stringify({ user: targetUser, stats, readme, activity }),
+            content: JSON.stringify(freshData),
             page_id: targetUserId as number,
             version: 1,
             metadata: {},
@@ -226,7 +246,7 @@ export default function ProfileContent() {
     };
 
     fetchProfileData();
-  }, [targetUserId, currentUser, userIdParam]);
+  }, [targetUserId, currentUser, userIdParam, profileCache, setProfileData]);
 
   if (authLoading) {
     return (
