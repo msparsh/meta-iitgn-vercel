@@ -7,6 +7,7 @@ import CategoryRouter from "./routes/categories.js"
 import NewsRouter from "./routes/news.js"
 import MediaRouter from "./routes/media.js"
 import BookmarksRouter from "./routes/bookmarks.js"
+import BlogRouter from "./routes/blogs.js"
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use("/categories", CategoryRouter);
 router.use("/news", NewsRouter);
 router.use("/media", MediaRouter);
 router.use("/bookmarks", BookmarksRouter);
+router.use("/blogs", BlogRouter);
 
 export default router;
