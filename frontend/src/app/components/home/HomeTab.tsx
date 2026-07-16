@@ -413,7 +413,7 @@ export default function HomeTab({
               <div className="flex gap-2">
                 {featuredSlides.map((_, index) => (
                   <button
-                    key={index}
+                    key={index+Math.random()}
                     type="button"
                     onClick={() => scrollToIndex(index)}
                     className="h-2.5 w-2.5 rounded-full bg-base-300 hover:bg-primary/60 transition-all cursor-pointer"
@@ -431,7 +431,7 @@ export default function HomeTab({
               const nextIndex = (index + 1) % n;
               return (
                 <div
-                  key={index}
+                  key={index+Math.random()}
                   id={`${carouselBase}-${index + 1}`}
                   className="carousel-item w-full"
                 >
@@ -501,7 +501,7 @@ export default function HomeTab({
               const IconComponent = Icons[index % Icons.length];
               const colors = ["bg-primary/10 text-primary", "bg-success/10 text-success", "bg-secondary/10 text-secondary"];
               return (
-                <button key={`news-${item.slug || index+1}`} type="button" onClick={() => setShowAllNews(true)} className="flex items-start gap-3 border-b border-base-200 pb-3 last:border-b-0 last:pb-0 cursor-pointer group text-left w-full">
+                <button key={`news-${item.slug || index+Math.random()}`} type="button" onClick={() => setShowAllNews(true)} className="flex items-start gap-3 border-b border-base-200 pb-3 last:border-b-0 last:pb-0 cursor-pointer group text-left w-full">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[index % colors.length]}`}>
                     <IconComponent className="h-4 w-4" />
                   </div>
@@ -538,7 +538,7 @@ export default function HomeTab({
                 const initials = editor.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase() || "U";
                 return (
                   <Link
-                    key={`editor-${editor.user_id || index+1}`}
+                    key={`editor-${editor.user_id || index+Math.random()}`}
                     href={`/user/profile?userId=${editor.user_id}`}
                     className="group/editor -mx-1 flex items-center gap-2.5 rounded-xl px-1 py-1.5 transition-colors hover:bg-base-200/60"
                   >
@@ -587,7 +587,7 @@ export default function HomeTab({
           ) : (
             <ul className="space-y-3">
               {newPages.slice(0, 3).map((page, index) => (
-                <li key={`new-page-${page.page_id || index+1}`}>
+                <li key={`new-page-${page.page_id || index+Math.random()}`}>
                   <Link href={`/wiki/${(page.metadata as any)?.category || 'campus'}/${page.slug}`} className="block text-xs font-semibold text-base-content/85 hover:text-primary transition-colors truncate">
                     {page.title || "Untitled"}
                   </Link>
@@ -623,7 +623,7 @@ export default function HomeTab({
           ) : (
             <ul className="space-y-3">
               {updatedPages.slice(0, 3).map((page, index) => (
-                <li key={`updated-page-${page.page_id || index}`}>
+                <li key={`updated-page-${page.page_id || index+Math.random()}`}>
                   <Link href={`/wiki/${(page.metadata as any)?.category || 'campus'}/${page.slug}`} className="block text-xs font-semibold text-base-content/85 hover:text-primary transition-colors truncate">
                     {page.title || "Untitled"}
                   </Link>
@@ -690,7 +690,7 @@ export default function HomeTab({
             ) : popularPages.length > 0 ? (
               popularPages.slice(0, 5).map((page, i) => (
                 <Link
-                  key={page.page_id}
+                  key={page.page_id+Math.random()}
                   href={`/wiki/${(page.metadata as any)?.category || 'campus'}/${page.slug}`}
                   className="flex items-center justify-between rounded-xl border border-base-200 bg-base-200/40 p-3 text-xs font-semibold text-base-content/80 hover:border-primary/40 hover:text-primary transition-colors"
                 >
@@ -774,7 +774,7 @@ export default function HomeTab({
               {messMenuData.meals.map((meal, i) => {
                 const theme = MESS_MOCK_THEME[getTimeOfDay(meal)];
                 return (
-                  <div key={i}>
+                  <div key={i+Math.random()}>
                     <div className="mb-2.5 flex items-center justify-between gap-2">
                       <span
                         className={`text-[13px] font-extrabold uppercase tracking-[0.8px] ${theme.mealName}`}
@@ -906,7 +906,7 @@ export default function HomeTab({
                   <div className="space-y-2">
                     {moreTrips.map(({ line, index, trip }) => (
                       <div
-                        key={index}
+                        key={index+Math.random()}
                         className="flex items-center justify-between gap-2 rounded-xl border border-base-200 bg-base-100 px-2.5 py-2"
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -1059,7 +1059,7 @@ export default function HomeTab({
                 return (
                   <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
                     {columns.map((col, ci) => (
-                      <div key={ci} className="space-y-4">
+                      <div key={ci+Math.random()} className="space-y-4">
                         {col.map((group) => (
                           <div key={group.title}>
                             <div className="mb-3.5 flex items-center justify-between">
@@ -1078,7 +1078,7 @@ export default function HomeTab({
                                 const visible = !hiddenCards.has(c.id);
                                 return (
                                   <label
-                                    key={c.id}
+                                    key={c.id+1}
                                     className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-base-200/60"
                                   >
                                     <span className="text-sm font-medium text-base-content/80">
