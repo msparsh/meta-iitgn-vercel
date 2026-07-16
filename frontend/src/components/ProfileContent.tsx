@@ -372,7 +372,7 @@ export default function ProfileContent() {
                   <span>{profileStats?.articlesImproved || 0} edits</span>
                   <span>36 edits</span>
                 </div>
-                <Link href="/wiki" className="btn btn-warning btn-sm mt-4 w-full rounded-xl text-warning-content">
+                <Link href="/wiki/categories" className="btn btn-warning btn-sm mt-4 w-full rounded-xl text-warning-content">
                   <BookOpen className="h-4 w-4" /> Find an article
                 </Link>
               </section>
@@ -404,7 +404,7 @@ export default function ProfileContent() {
               <h2 className="text-base font-black text-base-content">Saved Pages</h2>
               <p className="mt-0.5 text-xs text-base-content/55">{bookmarks.length} bookmarks</p>
             </div>
-            <Link href="/" className="btn btn-ghost btn-xs text-primary gap-1">
+            <Link href="/wiki/categories" className="btn btn-ghost btn-xs text-primary gap-1">
               Browse wiki <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
