@@ -449,11 +449,15 @@ export default function SettingsModal({ onClose, initialTab = "appearance" }: Se
                   {/* Theme Mode */}
                   <div className="space-y-2">
                     <label className="text-[12px] font-semibold text-base-content block">Interface Theme</label>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="flex flex-wrap gap-2">
                       {WIKI_THEMES.map((t) => {
                         const isSel = theme === t.id;
                         return (
-                          <label key={t.id} className="theme-controller cursor-pointer" title={t.label}>
+                          <label
+                            key={t.id}
+                            className="theme-controller cursor-pointer group"
+                            title={t.label}
+                          >
                             <input
                               type="radio"
                               name="theme-controller"
@@ -464,15 +468,26 @@ export default function SettingsModal({ onClose, initialTab = "appearance" }: Se
                             />
                             <div
                               data-theme={t.id}
-                              className={`grid place-items-center w-9 h-9 rounded-full bg-base-100 border-2 transition-transform duration-150 ${isSel ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-base-100" : "border-base-300 hover:scale-110"}`}
+                              className={`overflow-hidden rounded-lg border-2 w-12 transition-transform duration-150 ${
+                                isSel
+                                  ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-base-100"
+                                  : "border-base-300 group-hover:scale-105"
+                              }`}
                             >
-                              <span className="text-[9px] font-bold text-base-content leading-none">{t.label.split(" ")[0]}</span>
+                              <div className="flex h-7">
+                                <div className="flex-1 bg-primary" />
+                                <div className="flex-1 bg-secondary" />
+                                <div className="flex-1 bg-accent" />
+                                <div className="flex-1 bg-base-100 border-l border-base-300" />
+                              </div>
+                              <div className="bg-base-200 px-1 py-0.5 text-[8px] font-bold text-base-content truncate">
+                                {t.label}
+                              </div>
                             </div>
                           </label>
                         );
                       })}
                     </div>
-
                   </div>
                 </div>
               </div>
