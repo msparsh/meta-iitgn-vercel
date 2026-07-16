@@ -501,7 +501,7 @@ export default function HomeTab({
               const IconComponent = Icons[index % Icons.length];
               const colors = ["bg-primary/10 text-primary", "bg-success/10 text-success", "bg-secondary/10 text-secondary"];
               return (
-                <button key={`news-${item.slug || index}`} type="button" onClick={() => setShowAllNews(true)} className="flex items-start gap-3 border-b border-base-200 pb-3 last:border-b-0 last:pb-0 cursor-pointer group text-left w-full">
+                <button key={`news-${item.slug || index+1}`} type="button" onClick={() => setShowAllNews(true)} className="flex items-start gap-3 border-b border-base-200 pb-3 last:border-b-0 last:pb-0 cursor-pointer group text-left w-full">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors[index % colors.length]}`}>
                     <IconComponent className="h-4 w-4" />
                   </div>
@@ -538,7 +538,7 @@ export default function HomeTab({
                 const initials = editor.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase() || "U";
                 return (
                   <Link
-                    key={`editor-${editor.user_id || index}`}
+                    key={`editor-${editor.user_id || index+1}`}
                     href={`/user/profile?userId=${editor.user_id}`}
                     className="group/editor -mx-1 flex items-center gap-2.5 rounded-xl px-1 py-1.5 transition-colors hover:bg-base-200/60"
                   >
@@ -587,7 +587,7 @@ export default function HomeTab({
           ) : (
             <ul className="space-y-3">
               {newPages.slice(0, 3).map((page, index) => (
-                <li key={`new-page-${page.page_id || index}`}>
+                <li key={`new-page-${page.page_id || index+1}`}>
                   <Link href={`/wiki/${(page.metadata as any)?.category || 'campus'}/${page.slug}`} className="block text-xs font-semibold text-base-content/85 hover:text-primary transition-colors truncate">
                     {page.title || "Untitled"}
                   </Link>
@@ -660,7 +660,7 @@ export default function HomeTab({
             <ul className="space-y-3">
               {pendingPages.slice(0, 3).map((pending, index) => {
                 return (
-                  <li key={`pending-page-${pending.pending_id || index}`}>
+                  <li key={`pending-page-${pending.pending_id || index+1}`}>
                     <span className="block text-xs font-semibold text-base-content/85 truncate">{pending.title}</span>
                   </li>
                 );
