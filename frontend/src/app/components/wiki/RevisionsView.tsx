@@ -51,11 +51,11 @@ export default function RevisionsView({ setShowRevisions }: RevisionsViewProps) 
               avatar: "SY",
               time: "2 days ago",
               badge: "System",
-              badgeBg: "bg-gray-50 text-gray-600 border border-gray-200",
+              badgeBg: "bg-gray-50 text-gray-600 border border-base-300",
               details: "Imported markdown core structure, category hierarchies, and initial infobox configurations.",
             },
           ].map((revision) => (
-            <div key={revision.rev} className="p-4 sm:p-5 border border-gray-200 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-150 relative group">
+            <div key={revision.rev} className="p-4 sm:p-5 border border-base-300 bg-base-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-150 relative group">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-xl bg-base-200 border border-base-300 flex items-center justify-center font-bold text-sm text-base-content/80 shrink-0">
                   {revision.avatar}

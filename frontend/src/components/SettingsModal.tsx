@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, Eye, Layout, Bell, ChevronLeft, Search, User, Shield, HelpCircle, HardDrive, Cpu, Maximize2, Minimize2 } from "lucide-react";
 import { WIKI_THEMES, DARK_THEMES } from "@/lib/constants";
+import ProfilePopover from "@/components/ProfilePopover";
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -253,7 +254,7 @@ export default function SettingsModal({ onClose, initialTab = "appearance" }: Se
         {/* Unified Settings Header - using theme color, not too dark */}
         <div
           onMouseDown={handleMouseDown}
-          className={`grid grid-cols-3 items-center px-4 py-2.5 border-b border-base-300 bg-base-200 text-base-content select-none shrink-0 ${
+          className={`flex items-center justify-between px-4 py-2.5 border-b border-base-300 bg-base-200 text-base-content select-none shrink-0 ${
             isMaximized ? "cursor-default" : "cursor-move"
           }`}
         >
@@ -277,13 +278,9 @@ export default function SettingsModal({ onClose, initialTab = "appearance" }: Se
             </button>
           </div>
 
-          {/* Center: Title */}
-          <div className="flex items-center justify-center">
-            <span className="font-bold text-sm tracking-tight text-center truncate px-2">Settings</span>
-          </div>
-
           {/* Right: Actions */}
           <div className="flex items-center justify-end gap-1">
+            <ProfilePopover />
             <button
               onClick={() => setIsMaximized(!isMaximized)}
               className="hidden sm:inline-flex p-1 hover:bg-base-300 rounded-lg transition-colors cursor-pointer text-base-content/70 hover:text-base-content"
@@ -468,20 +465,17 @@ export default function SettingsModal({ onClose, initialTab = "appearance" }: Se
                             />
                             <div
                               data-theme={t.id}
-                              className={`overflow-hidden rounded-lg border-2 w-12 transition-transform duration-150 ${
+                              className={`flex h-10 w-10 items-center justify-center rounded-lg border-2 bg-base-100 transition-transform duration-150 ${
                                 isSel
                                   ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-base-100"
                                   : "border-base-300 group-hover:scale-105"
                               }`}
                             >
-                              <div className="flex h-7">
-                                <div className="flex-1 bg-primary" />
-                                <div className="flex-1 bg-secondary" />
-                                <div className="flex-1 bg-accent" />
-                                <div className="flex-1 bg-base-100 border-l border-base-300" />
-                              </div>
-                              <div className="bg-base-200 px-1 py-0.5 text-[8px] font-bold text-base-content truncate">
-                                {t.label}
+                              <div className="flex gap-1">
+                                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-secondary" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-accent" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-base-content" />
                               </div>
                             </div>
                           </label>
@@ -765,8 +759,8 @@ export default function SettingsModal({ onClose, initialTab = "appearance" }: Se
                       <span className="text-[10px] text-base-content/50 block">Read system instructions and project code rules.</span>
                     </div>
                     <div className="flex gap-2">
-                      <a href="https://github.com" target="_blank" rel="noreferrer" className="btn btn-outline btn-xs font-semibold text-blue-600">Docs</a>
-                      <a href="https://github.com" target="_blank" rel="noreferrer" className="btn btn-outline btn-xs font-semibold text-blue-600">License</a>
+                      <a href="https://github.com" target="_blank" rel="noreferrer" className="btn btn-outline btn-xs font-semibold text-primary">Docs</a>
+                      <a href="https://github.com" target="_blank" rel="noreferrer" className="btn btn-outline btn-xs font-semibold text-primary">License</a>
                     </div>
                   </div>
                 </div>
