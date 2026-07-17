@@ -40,14 +40,22 @@ export default function SearchTab({
 
         {/* Brand Header */}
         <div className="text-center space-y-3 select-none">
-          <h2 className="text-xs font-black uppercase tracking-[0.25em] text-primary">
-            IIT Gandhinagar Campus Wiki
-          </h2>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-black tracking-tight text-base-content leading-none">
-            Search <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">META IITGN</span>
+            <span className="text-7xl sm:text-8xl lg:text-9xl">Search</span>{' '}
+            <br />
+            <span className="text-rotate text-4xl sm:text-5xl lg:text-6xl duration-3500">
+              <span className="justify-items-center">
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">META IITGN</span>
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">PEOPLE</span>
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">CLUBS</span>
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">NEWS</span>
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">EVENTS</span>
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">COURSES</span>
+              </span>
+            </span>
           </h1>
           <p className="text-xs sm:text-sm text-base-content/55 max-w-md mx-auto font-medium leading-relaxed">
-            Find campus pages, people, news articles, academic guides, club info, and more — all in one place.
+            Find campus pages, people, news articles, club info, and more — all in one place.
           </p>
         </div>
 

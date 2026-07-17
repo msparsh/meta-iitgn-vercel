@@ -120,7 +120,7 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
   }
 
   return (
-    <main className={`flex-1 p-6 md:p-8 ${embedded ? "" : "mt-15"} bg-transparent overflow-y-auto`}>
+    <main className={`flex-1 p-6 md:p-8 ${embedded ? "" : "mt-15"} bg-transparent overflow-y-auto ${loading ? "no-scrollbar" : ""}`}>
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Category Header */}
