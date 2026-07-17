@@ -25,6 +25,7 @@ const PORT = process.env.PORT || 3001;
 const allowedOrigins = new Set<string>([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "https://meta-iitgn-vercel.vercel.app",
   ...(process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(",").map((o) => o.trim()).filter(Boolean)
     : []),
