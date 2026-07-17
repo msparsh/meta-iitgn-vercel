@@ -73,32 +73,35 @@ export default function SearchTab({
           />
         </div>
 
-        {/* Recent searches */}
-        {history.length > 0 && (
-          <div className="w-full max-w-2xl flex flex-wrap items-center justify-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mr-1">
-              Recent
-            </span>
-            {history.map((item) => (
+        {/* Recent searches — keep a reserved height so the vertically
+            centered search box never shifts when history appears/disappears */}
+        <div className="w-full max-w-2xl min-h-[2.25rem] flex flex-wrap items-center justify-center gap-2">
+          {history.length > 0 && (
+            <>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mr-1">
+                Recent
+              </span>
+              {history.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => handleSearch(item)}
+                  className="text-xs font-semibold text-base-content/70 bg-base-200 hover:bg-base-300 hover:text-base-content rounded-full px-3 py-1 transition-colors cursor-pointer"
+                >
+                  {item}
+                </button>
+              ))}
               <button
-                key={item}
-                onClick={() => handleSearch(item)}
-                className="text-xs font-semibold text-base-content/70 bg-base-200 hover:bg-base-300 hover:text-base-content rounded-full px-3 py-1 transition-colors cursor-pointer"
+                onClick={() => {
+                  clearSearchHistory();
+                  setHistory([]);
+                }}
+                className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 hover:text-rose-500 transition-colors cursor-pointer ml-1"
               >
-                {item}
+                Clear
               </button>
-            ))}
-            <button
-              onClick={() => {
-                clearSearchHistory();
-                setHistory([]);
-              }}
-              className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 hover:text-rose-500 transition-colors cursor-pointer ml-1"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
       </div>
     </div>

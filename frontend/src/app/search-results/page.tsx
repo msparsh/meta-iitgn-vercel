@@ -223,34 +223,36 @@ function SearchResultsContent() {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 pb-28">
-        {history.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mr-1">
-              Recent
-            </span>
-            {history.map((item) => (
+        <div className="min-h-[2rem] flex flex-wrap items-center gap-2 mb-4">
+          {history.length > 0 && (
+            <>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 mr-1">
+                Recent
+              </span>
+              {history.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => {
+                    setSearchQuery(item);
+                    addSearchHistory(item);
+                  }}
+                  className="text-xs font-semibold text-base-content/70 bg-base-200 hover:bg-base-300 hover:text-base-content rounded-full px-3 py-1 transition-colors cursor-pointer"
+                >
+                  {item}
+                </button>
+              ))}
               <button
-                key={item}
                 onClick={() => {
-                  setSearchQuery(item);
-                  addSearchHistory(item);
+                  clearSearchHistory();
+                  setHistory([]);
                 }}
-                className="text-xs font-semibold text-base-content/70 bg-base-200 hover:bg-base-300 hover:text-base-content rounded-full px-3 py-1 transition-colors cursor-pointer"
+                className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 hover:text-rose-500 transition-colors cursor-pointer ml-1"
               >
-                {item}
+                Clear
               </button>
-            ))}
-            <button
-              onClick={() => {
-                clearSearchHistory();
-                setHistory([]);
-              }}
-              className="text-[10px] font-bold uppercase tracking-wider text-base-content/40 hover:text-rose-500 transition-colors cursor-pointer ml-1"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
         <div className="flex items-center justify-between mb-4 select-none">
           <p className="text-[10px] font-black text-base-content/50 uppercase tracking-widest">
             {loading ? "Searching…" : `${total} result${total !== 1 ? "s" : ""} found`}
