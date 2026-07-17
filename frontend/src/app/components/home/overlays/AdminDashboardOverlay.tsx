@@ -6,6 +6,8 @@ import ConfirmationModal from "@/components/ConfirmationModal";
 import { apiService } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { Shield, FileText, Settings, Users, ArrowUpRight } from "lucide-react";
+import PendingChangesView from "../../wiki/PendingChangesView";
+import BlogPendingChangesView from "../../blog/BlogPendingChangesView";
 
 interface AdminDashboardOverlayProps {
   setShowDashboard: (show: boolean) => void;
@@ -38,7 +40,9 @@ interface UserRecord {
 
 export default function AdminDashboardOverlay({ setShowDashboard }: AdminDashboardOverlayProps) {
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<"logs" | "users">("logs");
+  const [activeTab, setActiveTab] = useState<"logs" | "users" | "approvals">("logs");
+  const [showWikiApprovals, setShowWikiApprovals] = useState(false);
+  const [showBlogApprovals, setShowBlogApprovals] = useState(false);
 
   // Audit Logs State
   const [logs, setLogs] = useState<AuditLogRecord[]>([]);
@@ -260,6 +264,17 @@ export default function AdminDashboardOverlay({ setShowDashboard }: AdminDashboa
               <Users className="h-3.5 w-3.5" />
               <span>User Roles</span>
             </button>
+            <button
+              onClick={() => setActiveTab("approvals")}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 cursor-pointer ${
+                activeTab === "approvals"
+                  ? "bg-base-100 text-base-content shadow"
+                  : "text-base-content/65 hover:bg-base-300/50"
+              }`}
+            >
+              <Shield className="h-3.5 w-3.5" />
+              <span>Pending Approvals</span>
+            </button>
           </div>
         </div>
 
@@ -425,7 +440,50 @@ export default function AdminDashboardOverlay({ setShowDashboard }: AdminDashboa
             )}
           </div>
         )}
+
+        {/* Tab content: Pending Approvals */}
+        {activeTab === "approvals" && (
+          <div className="space-y-6 py-4">
+            <div className="bg-base-200/50 border border-base-300 rounded-3xl p-6 text-center max-w-xl mx-auto space-y-4">
+              <Shield className="h-12 w-12 text-primary mx-auto opacity-75" />
+              <div>
+                <h3 className="text-lg font-black text-base-content">Manage Pending Approvals</h3>
+                <p className="text-sm text-base-content/60 mt-1 leading-relaxed">
+                  Review and publish proposed wiki articles, page edits, and blog posts submitted by campus contributors.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <button
+                  onClick={() => setShowWikiApprovals(true)}
+                  className="btn btn-primary rounded-xl font-bold flex-1 sm:flex-initial cursor-pointer animate-none"
+                >
+                  Review Wiki Articles
+                </button>
+                <button
+                  onClick={() => setShowBlogApprovals(true)}
+                  className="btn btn-secondary rounded-xl font-bold flex-1 sm:flex-initial cursor-pointer animate-none"
+                >
+                  Review Blog Posts
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {showWikiApprovals && (
+        <PendingChangesView
+          setShowPendingChanges={setShowWikiApprovals}
+          isGlobal={true}
+        />
+      )}
+
+      {showBlogApprovals && (
+        <BlogPendingChangesView
+          setShowPendingChanges={setShowBlogApprovals}
+          isGlobal={true}
+        />
+      )}
 
       <ConfirmationModal
         isOpen={confirmModal.isOpen}

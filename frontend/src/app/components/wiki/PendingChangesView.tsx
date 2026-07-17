@@ -11,6 +11,9 @@ import { useAuth } from "@/hooks/useAuth";
 interface PendingChangesViewProps {
   setShowPendingChanges: (show: boolean) => void;
   pageId?: number;
+  slug?: string;
+  title?: string;
+  isGlobal?: boolean;
 }
 
 interface PendingDraft {
@@ -44,7 +47,13 @@ const DraftSkeleton = () => (
   </div>
 );
 
-export default function PendingChangesView({ setShowPendingChanges, pageId }: PendingChangesViewProps) {
+export default function PendingChangesView({
+  setShowPendingChanges,
+  pageId,
+  slug,
+  title,
+  isGlobal = false,
+}: PendingChangesViewProps) {
   const { user, activeTier } = useAuth();
   const canModerate = activeTier !== "bronze";
   const router = useRouter();
@@ -66,8 +75,26 @@ export default function PendingChangesView({ setShowPendingChanges, pageId }: Pe
     setLoading(true);
     setError(null);
     try {
-      const data = await apiService.getPendingDrafts(pageId);
-      setDrafts(data);
+      if (isGlobal) {
+        const data = await apiService.getPendingDrafts(undefined, 100, 1);
+        setDrafts(data);
+        return;
+      }
+
+      if (pageId) {
+        const data = await apiService.getPendingDrafts(pageId);
+        setDrafts(data);
+      } else {
+        const data = await apiService.getPendingDrafts(undefined, 100, 1);
+        const filtered = data.filter((d: any) => {
+          if (d.page_id === null) {
+            const draftSlug = d.metadata?.slug || d.title.replace(/[^a-zA-Z0-9\s-]/g, '').trim().toLowerCase().replace(/[\s-]+/g, '-');
+            return d.title === title || draftSlug === slug;
+          }
+          return false;
+        });
+        setDrafts(filtered);
+      }
     } catch (err: unknown) {
       console.error(err);
       const errMsg = err instanceof Error ? err.message : "An error occurred while loading pending changes.";
@@ -75,7 +102,7 @@ export default function PendingChangesView({ setShowPendingChanges, pageId }: Pe
     } finally {
       setLoading(false);
     }
-  }, [pageId]);
+  }, [pageId, slug, title, isGlobal]);
 
   useEffect(() => {
     fetchDrafts();
@@ -131,7 +158,11 @@ export default function PendingChangesView({ setShowPendingChanges, pageId }: Pe
   };
 
   const closeModal = () => {
-    router.back();
+    if (isGlobal) {
+      setShowPendingChanges(false);
+    } else {
+      router.back();
+    }
   };
 
   const isNewPageProposal = !!activeReviewDraft && !activeReviewDraft.page_id;

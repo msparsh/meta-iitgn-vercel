@@ -59,7 +59,7 @@ export default function WikiClient({
   initialMetadata,
   version,
 }: WikiClientProps) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isEditing, setIsEditing] = useState(defaultEditing || false);
@@ -74,6 +74,30 @@ export default function WikiClient({
       currentSlug?.startsWith("profile-") || categorySlug === "profile"
     );
   }, [initialMetadata, categorySlug]);
+
+  const isStaff = user?.role === "admin" || user?.role === "moderator";
+  const isSelfProfile = isProfile && (
+    (typeof window !== "undefined" && window.location.pathname.split("/").pop() === `profile-${user?.user_id}`) ||
+    initialMetadata?.slug === `profile-${user?.user_id}`
+  );
+
+  if (!authLoading && !dbPageId && !isStaff && !isSelfProfile) {
+    return (
+      <main className="flex-1 p-6 md:p-8 lg:p-12 bg-base-100 mt-16 text-center select-none">
+        <div className="max-w-4xl mx-auto py-20 flex flex-col items-center gap-4">
+          <div className="w-16 h-16 bg-error/10 text-error rounded-2xl flex items-center justify-center font-black">
+            ✕
+          </div>
+          <h1 className="text-3xl font-display font-black tracking-tight text-base-content">Access Denied</h1>
+          <p className="text-base-content/65 max-w-md">Only administrators and moderators are allowed to create new articles.</p>
+          <button onClick={() => router.back()} className="btn btn-primary rounded-xl font-bold mt-4">
+            Go Back
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   const [activeSection, setActiveSection] = useState<string>("");
   const [readingProgressPct, setReadingProgressPct] = useState(0);
   const [editorLoaded, setEditorLoaded] = useState(false);
@@ -994,6 +1018,8 @@ export default function WikiClient({
         <PendingChangesView
           setShowPendingChanges={setShowPendingChanges}
           pageId={dbPageId}
+          slug={initialMetadata?.slug || (typeof window !== "undefined" ? window.location.pathname.split("/").pop() || "" : "")}
+          title={parsed.title || ""}
         />
       )}
 

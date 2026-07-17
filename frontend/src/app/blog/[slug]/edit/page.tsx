@@ -97,12 +97,19 @@ export default function BlogEditPage() {
     fetchBlog();
   }, [slug, isNew, user, router]);
 
-  // Auth Protection
+  // Auth Protection & New Blog validation
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
+    if (!authLoading) {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+      const isStaff = user.role === "admin" || user.role === "moderator";
+      if (isNew && !isStaff) {
+        router.push("/blog");
+      }
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, isNew]);
 
   if (loading || authLoading) {
     return (

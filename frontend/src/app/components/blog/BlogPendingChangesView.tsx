@@ -16,6 +16,9 @@ const BlockNoteReader = dynamic(
 interface BlogPendingChangesViewProps {
   setShowPendingChanges: (show: boolean) => void;
   blogId?: number;
+  slug?: string;
+  title?: string;
+  isGlobal?: boolean;
 }
 
 interface PendingBlogDraft {
@@ -51,7 +54,13 @@ const DraftSkeleton = () => (
   </div>
 );
 
-export default function BlogPendingChangesView({ setShowPendingChanges, blogId }: BlogPendingChangesViewProps) {
+export default function BlogPendingChangesView({
+  setShowPendingChanges,
+  blogId,
+  slug,
+  title,
+  isGlobal = false,
+}: BlogPendingChangesViewProps) {
   const { user } = useAuth();
   const isAdminOrMod = user?.role === "admin" || user?.role === "moderator";
 
@@ -90,12 +99,22 @@ export default function BlogPendingChangesView({ setShowPendingChanges, blogId }
     }
     setError(null);
     try {
-      const data = await apiService.getPendingBlogDrafts({ page: pageNum, limit });
+      const data = await apiService.getPendingBlogDrafts({ page: pageNum, limit: isGlobal ? 50 : limit });
       if (data && data.success) {
-        // Filter by blogId if passed
-        const filtered = blogId 
-          ? data.drafts.filter((d: PendingBlogDraft) => d.blog_id === blogId)
-          : data.drafts;
+        let filtered = data.drafts;
+        
+        if (!isGlobal) {
+          if (blogId) {
+            filtered = data.drafts.filter((d: PendingBlogDraft) => d.blog_id === blogId);
+          } else {
+            filtered = data.drafts.filter((d: PendingBlogDraft) => {
+              if (d.blog_id === null) {
+                return d.slug === slug || d.title === title;
+              }
+              return false;
+            });
+          }
+        }
         
         if (append) {
           setDrafts((prev) => [...prev, ...filtered]);
@@ -111,7 +130,7 @@ export default function BlogPendingChangesView({ setShowPendingChanges, blogId }
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [blogId]);
+  }, [blogId, slug, title, isGlobal]);
 
   useEffect(() => {
     fetchDrafts(1, false);

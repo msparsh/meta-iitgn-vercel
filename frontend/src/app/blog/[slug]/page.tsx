@@ -217,7 +217,12 @@ export default function BlogDetailPage() {
       )}
 
       {showPendingChanges && (
-        <BlogPendingChangesView setShowPendingChanges={setShowPendingChanges} blogId={blog.blog_id} />
+        <BlogPendingChangesView
+          setShowPendingChanges={setShowPendingChanges}
+          blogId={blog.blog_id}
+          slug={blog.slug}
+          title={blog.title}
+        />
       )}
 
       <ConfirmationModal
