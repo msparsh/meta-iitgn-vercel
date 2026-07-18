@@ -297,34 +297,6 @@ export const searchPages = async (req: Request, res: Response) => {
     for (const p of livePages) {
       const meta = p.metadata as any;
       const category = meta?.category || 'Campus';
-      const isProfile = category.toLowerCase() === 'profile' || p.slug.startsWith('profile-');
-
-      if (isProfile) {
-        const userIdStr = p.slug.replace('profile-', '');
-        const userIdVal = parseInt(userIdStr, 10);
-        if (!isNaN(userIdVal)) {
-          const titleScore = scoreText(p.title || '', query);
-          const contentScore = scoreText(p.content || '', query);
-          const totalScore = titleScore * 3 + contentScore;
-          if (totalScore > 15) {
-            const matchedUser = allUsers.find(u => u.user_id === userIdVal);
-            const nameText = matchedUser ? matchedUser.name : (p.title || 'Untitled Profile');
-            const existing = profileMap.get(userIdVal);
-            const finalScore = existing ? Math.max(existing.score, totalScore) : totalScore;
-            profileMap.set(userIdVal, {
-              title: nameText,
-              slug: p.slug,
-              path: `/user/profile?userId=${userIdVal}`,
-              category: 'Profile',
-              type: 'profile',
-              description: cleanContent(p.content) || (existing ? existing.description : 'View profile details'),
-              is_pending: false,
-              score: finalScore,
-            });
-          }
-        }
-        continue;
-      }
 
       const titleScore = scoreText(p.title || '', query);
       const contentScore = scoreText(p.content || '', query);
@@ -746,12 +718,9 @@ export const updatePage = async (req: Request, res: Response) => {
 
     const editorId = Number(req.user.user_id);
 
-    // Secure profile README pages: only owner or admin can edit
-    if (slug.startsWith('profile-')) {
-      const profileUserId = Number(slug.replace('profile-', ''));
-      if (profileUserId !== editorId && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'You are only allowed to edit your own profile README' });
-      }
+    const isStaff = req.user.role === 'admin' || req.user.role === 'moderator';
+    if (!isStaff) {
+      return res.status(403).json({ error: 'You are not authorized to make direct edits to wiki pages. Please submit an edit proposal instead.' });
     }
 
     const livePage = await prisma.live_pages.findUnique({

@@ -14,10 +14,11 @@ import { updateSyncMetadata } from '../utils/syncMetadata.js';
  */
 export const submitDraft = async (req: Request, res: Response) => {
   try {
-     const { page_id, title, content, metadata, editor_id, base_version, video_url } = req.body;
+     const { page_id, title, content, metadata, base_version, video_url } = req.body;
+     const editor_id = Number(req.user.user_id);
 
-    if (!title || editor_id === undefined || editor_id === null) {
-      return res.status(400).json({ error: 'Title and editor_id are required' });
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
     }
 
     const versionVal = base_version !== undefined && base_version !== null ? Number(base_version) : 1;
