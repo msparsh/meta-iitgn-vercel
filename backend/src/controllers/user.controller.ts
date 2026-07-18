@@ -445,3 +445,47 @@ export const getUserBookmarks = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
+
+export const getUserReadme = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.user_id);
+    const readme = await prisma.user_readmes.findUnique({
+      where: { user_id: userId }
+    });
+    return res.json({
+      success: true,
+      data: readme ? { user_id: readme.user_id, content: readme.content } : null
+    });
+  } catch (error: any) {
+    console.error('Error in getUserReadme:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+  }
+};
+
+export const saveUserReadme = async (req: Request, res: Response) => {
+  try {
+    if (!req.user || !req.user.user_id) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
+    const userId = Number(req.user.user_id);
+    const { content } = req.body;
+
+    if (content === undefined || content === null) {
+      return res.status(400).json({ success: false, error: 'Content is required' });
+    }
+
+    const readme = await prisma.user_readmes.upsert({
+      where: { user_id: userId },
+      update: { content },
+      create: { user_id: userId, content }
+    });
+
+    return res.json({
+      success: true,
+      data: { user_id: readme.user_id, content: readme.content }
+    });
+  } catch (error: any) {
+    console.error('Error in saveUserReadme:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Internal server error' });
+  }
+};

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { devBypass, getUsers, handleGoogleAuth, clearUser, handleMe, getUserStats, getUserById, getUserBookmarks, getUsersCount, updateUserRole } from "../controllers/user.controller.js";
+import { devBypass, getUsers, handleGoogleAuth, clearUser, handleMe, getUserStats, getUserById, getUserBookmarks, getUsersCount, updateUserRole, getUserReadme, saveUserReadme } from "../controllers/user.controller.js";
 import { protect, checkAuth } from "../middlewares/auth.js";
 
 const router = Router();
@@ -19,5 +19,9 @@ router.post("/auth/logout", clearUser);
 router.get("/auth/me", protect(), handleMe);
 router.get("/:user_id/stats", protect(), getUserStats);
 router.get("/:user_id/bookmarks", protect(), getUserBookmarks);
+
+// README routes (saveUserReadme relies on authenticated user context)
+router.get("/:user_id/readme", protect(), getUserReadme);
+router.put("/readme", protect(), saveUserReadme);
 
 export default router;

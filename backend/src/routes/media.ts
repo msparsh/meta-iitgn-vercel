@@ -16,13 +16,23 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+const ALLOWED_MIMES: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
+  "image/png": ".png",
+  "image/gif": ".gif",
+  "image/webp": ".webp",
+  "application/pdf": ".pdf"
+};
+
 const storage = multer.diskStorage({
   destination: (req: any, file: any, cb: any) => {
     cb(null, uploadDir);
   },
   filename: (req: any, file: any, cb: any) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
+    const mime = file.mimetype ? file.mimetype.toLowerCase() : "";
+    const ext = ALLOWED_MIMES[mime] || ".bin";
     cb(null, file.fieldname + "-" + uniqueSuffix + ext);
   }
 });
@@ -31,6 +41,14 @@ const upload = multer({
   storage,
   limits: {
     fileSize: 20 * 1024 * 1024 // Global max size 20MB
+  },
+  fileFilter: (req: any, file: any, cb: any) => {
+    const mime = file.mimetype ? file.mimetype.toLowerCase() : "";
+    if (mime in ALLOWED_MIMES) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type. Only JPEGs, PNGs, GIFs, WEBPs, and PDFs are allowed."));
+    }
   }
 });
 
@@ -45,13 +63,14 @@ router.post("/upload", checkAuth, upload.single("file"), async (req: any, res) =
 
   try {
     // 1. Validate file size and type
-    const isImage = mimeType.startsWith("image/");
-    const isPdf = mimeType === "application/pdf";
-
-    if (!isImage && !isPdf) {
+    const mime = mimeType ? mimeType.toLowerCase() : "";
+    if (!(mime in ALLOWED_MIMES)) {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      return res.status(400).json({ error: "Invalid file type. Only images and PDFs are allowed." });
+      return res.status(400).json({ error: "Invalid file type. Only JPEGs, PNGs, GIFs, WEBPs, and PDFs are allowed." });
     }
+
+    const isImage = mime.startsWith("image/");
+    const isPdf = mime === "application/pdf";
 
     if (isImage && fileSize > 2 * 1024 * 1024) {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

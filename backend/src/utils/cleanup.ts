@@ -64,7 +64,21 @@ export async function runMediaCleanup() {
         }
       });
 
-      const totalReferences = countLive + countPending + countRevision + countBlogs;
+      // E. Check in pending_blogs
+      const countPendingBlogs = await prisma.pending_blogs.count({
+        where: {
+          content: { contains: fileUrl }
+        }
+      });
+
+      // F. Check in revision_blogs
+      const countRevisionBlogs = await prisma.revision_blogs.count({
+        where: {
+          content: { contains: fileUrl }
+        }
+      });
+
+      const totalReferences = countLive + countPending + countRevision + countBlogs + countPendingBlogs + countRevisionBlogs;
 
       if (totalReferences === 0) {
         // Unused! Delete from Cloudinary / local fallback

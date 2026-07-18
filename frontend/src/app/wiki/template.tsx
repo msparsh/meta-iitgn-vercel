@@ -1,18 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import Navbar from "@/components/navs/Navbar";
+import Sidebar from "@/components/navs/Sidebar";
 import { TIERS } from "@/lib/constants";
 
 export default function WikiLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTier, setCurrentTier] = useState<keyof typeof TIERS>("gold");
-  const pathname = usePathname();
-  const isProfileReadme =
-    pathname?.split("/").pop()?.startsWith("profile-") ||
-    pathname?.split("/")[2] === "profile";
+  const isProfileReadme = false;
 
   return (
     <div className="relative h-screen w-screen bg-base-100 overflow-hidden font-sans">
