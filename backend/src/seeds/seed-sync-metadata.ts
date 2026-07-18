@@ -1,5 +1,5 @@
-import { prisma } from './lib/prisma.js';
-import { updateSyncMetadata, SyncKey } from './utils/syncMetadata.js';
+import { prisma } from '../lib/prisma.js';
+import { updateSyncMetadata, SyncKey } from '../utils/syncMetadata.js';
 
 async function main() {
   console.log('Starting sync metadata backfill/seeding...');

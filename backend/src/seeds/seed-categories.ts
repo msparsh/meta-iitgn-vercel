@@ -1,4 +1,4 @@
-import { prisma } from "./lib/prisma.js";
+import { prisma } from "../lib/prisma.js";
 
 const DEFAULT_CATEGORIES = [
   { slug: "departments", name: "Departments", description: "Explore the academic departments and engineering disciplines at IIT Gandhinagar." },

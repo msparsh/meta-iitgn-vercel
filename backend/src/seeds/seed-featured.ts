@@ -1,4 +1,4 @@
-import { prisma } from './lib/prisma.js';
+import { prisma } from '../lib/prisma.js';
 
 async function seed() {
   console.log('Seeding featured pages, mess menu, campus transport, events...');
