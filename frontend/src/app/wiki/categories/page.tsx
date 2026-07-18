@@ -138,7 +138,7 @@ export default function CategoriesPage() {
             </p>
           </div>
 
-          {user && (
+          {(user?.role === "admin" || user?.role === "moderator") && (
             <div className="shrink-0 mb-1">
               <button
                 onClick={() => {
