@@ -62,7 +62,18 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 
-app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
+app.use(
+  "/uploads",
+  (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    res.set("Content-Security-Policy", "default-src 'none'; sandbox;");
+    res.set("X-Content-Type-Options", "nosniff");
+    if (req.path.toLowerCase().endsWith(".pdf")) {
+      res.set("Content-Disposition", "attachment");
+    }
+    next();
+  },
+  express.static(path.resolve(__dirname, "../uploads"))
+);
 app.use("/api", routes);
 app.use("/", routes);
 

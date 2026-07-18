@@ -101,20 +101,11 @@ export default function WikiClient({
 
   const parsed = useMemo(() => parseMarkdown(markdown), [markdown]);
   const isProfile = useMemo(() => {
-    let currentSlug = initialMetadata?.slug;
-    if (!currentSlug && typeof window !== "undefined") {
-      currentSlug = window.location.pathname.split("/").pop();
-    }
-    return !!(
-      currentSlug?.startsWith("profile-") || categorySlug === "profile"
-    );
-  }, [initialMetadata, categorySlug]);
+    return categorySlug === "profile";
+  }, [categorySlug]);
 
   const isStaff = user?.role === "admin" || user?.role === "moderator";
-  const isSelfProfile = isProfile && (
-    (typeof window !== "undefined" && window.location.pathname.split("/").pop() === `profile-${user?.user_id}`) ||
-    initialMetadata?.slug === `profile-${user?.user_id}`
-  );
+  const isSelfProfile = false;
 
   const isNews = useMemo(() => {
     return (
@@ -469,9 +460,7 @@ export default function WikiClient({
       if (!currentSlug && typeof window !== "undefined") {
         currentSlug = window.location.pathname.split("/").pop();
       }
-      const isProfilePage =
-        currentSlug?.startsWith("profile-") || category === "profile";
-      if (category === "profile" && !isProfilePage) {
+      if (category === "profile") {
         alert("Normal articles cannot be categorized as 'profile'.");
         return;
       }
@@ -491,7 +480,6 @@ export default function WikiClient({
       };
 
       const isStaff = user?.role === "admin" || user?.role === "moderator";
-      const isSelfProfile = currentSlug === `profile-${user?.user_id}`;
       const contentVal = resolvedContentOverride !== undefined
         ? resolvedContentOverride
         : markdownRef.current;
@@ -511,7 +499,7 @@ export default function WikiClient({
         parsedForSave.title
       );
 
-      if (isStaff || isSelfProfile) {
+      if (isStaff) {
         if (dbPageId) {
           const res = await apiService.updatePage(currentSlug || "", {
             title: parsed.title || "Untitled Page",

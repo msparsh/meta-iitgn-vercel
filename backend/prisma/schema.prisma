@@ -50,6 +50,7 @@ model users {
   pending_blogs_reviewed  pending_blogs[]         @relation("BlogReviewer")
   revision_blogs_authored revision_blogs[]        @relation("RevisionBlogOriginalAuthor")
   revision_blogs_created  revision_blogs[]        @relation("RevisionBlogCreator")
+  readme                  user_readmes?
 }
 
 model live_pages {
@@ -332,6 +333,16 @@ model sync_metadata {
   key          String   @id
   last_updated DateTime @updatedAt
   count        Int
+}
+
+model user_readmes {
+  user_id    Int      @id
+  content    String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  // Relations
+  user       users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
 

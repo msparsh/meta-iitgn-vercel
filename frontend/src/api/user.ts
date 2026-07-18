@@ -46,3 +46,13 @@ export const getUserBookmarks = async (userId: number) => {
   const response = await api.get(`/user/${userId}/bookmarks`, { withCredentials: true });
   return response.data;
 };
+
+export const getUserReadme = async (userId: number) => {
+  const response = await api.get(`/user/${userId}/readme`, { withCredentials: true });
+  return response.data;
+};
+
+export const saveUserReadme = async (content: string) => {
+  const response = await api.put(`/user/readme`, { content }, { withCredentials: true });
+  return response.data;
+};

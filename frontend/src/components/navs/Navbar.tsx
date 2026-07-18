@@ -95,7 +95,7 @@ export default function Navbar({
   const bookmarks = useHomeStore((s) => s.bookmarks);
   const pathname = usePathname();
   const segments = pathname?.split("/").filter(Boolean) ?? [];
-  const isWiki = ((segments[0] === "wiki" || segments[0] === "blog") && segments.length >= 2) || segments[0] === "search-results";
+  const isWiki = ((segments[0] === "wiki" || segments[0] === "blog") && segments.length >= 1) || segments[0] === "search-results";
   const isWikiArticlePage = (segments[0] === "wiki" || segments[0] === "blog") && segments.length >= 3;
 
   const [searchQuery, setSearchQuery] = useState(externalQuery || "");

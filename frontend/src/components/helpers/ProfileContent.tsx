@@ -57,31 +57,7 @@ export default function ProfileContent() {
     if (!targetUserId) return;
     setIsSavingReadme(true);
     try {
-      const pageSlug = `profile-${targetUserId}`;
-
-      // Try updating the existing README page first. If it doesn't exist yet
-      // (404), create it. Relying on `profileReadme === null` to decide is
-      // unreliable — an existing page with empty content also reads as null,
-      // which would trigger a create against an existing slug and silently
-      // produce a duplicate page (`profile-<id>-1`) that never gets read back.
-      try {
-        await apiService.updatePage(pageSlug, {
-          content: editReadmeContent,
-        });
-      } catch (updateErr: any) {
-        const status = updateErr?.response?.status;
-        if (status === 404) {
-          await apiService.createPage({
-            title: pageSlug,
-            slug: pageSlug,
-            content: editReadmeContent,
-            metadata: { category: "profile" },
-          } as any);
-        } else {
-          throw updateErr;
-        }
-      }
-
+      await apiService.saveUserReadme(editReadmeContent);
       setProfileReadme(editReadmeContent);
 
       // Update in-memory context cache
@@ -203,9 +179,9 @@ export default function ProfileContent() {
         // Profile README
         let readme = null;
         try {
-          const pageRes = await apiService.getPage(`profile-${targetUserId}`);
-          if (pageRes && pageRes.content) {
-            readme = pageRes.content;
+          const res = await apiService.getUserReadme(targetUserId);
+          if (res && res.success && res.data) {
+            readme = res.data.content;
           }
         } catch {
           // ignore
