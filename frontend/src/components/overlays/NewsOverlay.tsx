@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { apiService } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import GenericOverlayModal from "@/components/overlays/GenericOverlayModal";
@@ -35,6 +35,12 @@ export default function NewsOverlay({
   const [newNewsVideoUrl, setNewNewsVideoUrl] = useState("");
   const [isSubmittingNews, setIsSubmittingNews] = useState(false);
 
+  // Edit form states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editVideoUrl, setEditVideoUrl] = useState("");
+
   const fetchNews = async (pageNum = 1, append = false) => {
     try {
       if (pageNum === 1) {
@@ -60,6 +66,7 @@ export default function NewsOverlay({
       setShowAddNewsForm(false);
       setSelectedNews(null);
       setNewNewsVideoUrl("");
+      setIsEditing(false);
     }
   }, [isOpen]);
 
@@ -94,12 +101,57 @@ export default function NewsOverlay({
     }
   };
 
+  const handleUpdateNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedNews || !editTitle.trim() || !editContent.trim()) return;
+    setIsSubmittingNews(true);
+    try {
+      const updated = await apiService.updateNews(selectedNews.slug, {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        video_url: editVideoUrl.trim() || undefined,
+      });
+      toast.success("News page updated successfully!");
+      setSelectedNews(updated);
+      setIsEditing(false);
+      fetchNews(1, false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.message || "Failed to update news");
+    } finally {
+      setIsSubmittingNews(false);
+    }
+  };
+
+  const handleDeleteNews = async () => {
+    if (!selectedNews) return;
+    if (!window.confirm("Are you sure you want to delete this news article?")) return;
+    try {
+      await apiService.deleteNews(selectedNews.slug);
+      toast.success("News article deleted successfully.");
+      setSelectedNews(null);
+      fetchNews(1, false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.error || err.message || "Failed to delete news");
+    }
+  };
+
   const canManageNews = user?.role === "admin" || user?.role === "moderator";
 
   if (!isOpen) return null;
 
   const headerActions = canManageNews ? (
-    showAddNewsForm ? (
+    isEditing ? (
+      <button
+        type="submit"
+        form="edit-news-form"
+        disabled={isSubmittingNews}
+        className="btn btn-primary btn-xs px-3 font-bold rounded-lg shadow-sm cursor-pointer transition-all duration-150 active:scale-97"
+      >
+        {isSubmittingNews ? "Saving..." : "Save Changes"}
+      </button>
+    ) : showAddNewsForm ? (
       <button
         type="submit"
         form="add-news-form"
@@ -122,7 +174,9 @@ export default function NewsOverlay({
     <GenericOverlayModal
       isOpen={isOpen}
       onClose={() => {
-        if (showAddNewsForm) {
+        if (isEditing) {
+          setIsEditing(false);
+        } else if (showAddNewsForm) {
           setShowAddNewsForm(false);
         } else if (selectedNews) {
           setSelectedNews(null);
@@ -130,12 +184,47 @@ export default function NewsOverlay({
           onClose();
         }
       }}
-      title={showAddNewsForm ? "Add Campus News" : selectedNews ? selectedNews.title : "Campus News"}
+      title={isEditing ? "Edit Campus News" : showAddNewsForm ? "Add Campus News" : selectedNews ? selectedNews.title : "Campus News"}
       headerColorClass="text-blue-500 bg-base-200"
       headerActions={headerActions}
     >
       <div className="max-w-3xl mx-auto space-y-4 w-full">
-        {showAddNewsForm ? (
+        {isEditing ? (
+          <form id="edit-news-form" onSubmit={handleUpdateNews} className="space-y-4 bg-base-100 p-6 border border-base-350 rounded-2xl shadow-xs text-left w-full">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold uppercase text-base-content/90">News Title</label>
+              <input
+                type="text"
+                required
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. Annual Sports Fest Hallabol 2026 Announced"
+                className="w-full border border-base-300 bg-base-100 text-base-content/80 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold uppercase text-base-content/90">YouTube Video URL (Optional)</label>
+              <input
+                type="text"
+                value={editVideoUrl}
+                onChange={(e) => setEditVideoUrl(e.target.value)}
+                placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                className="w-full border border-base-300 bg-base-100 text-base-content/80 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-extrabold uppercase text-base-content/90">Content</label>
+              <textarea
+                required
+                rows={8}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                placeholder="Write the news details here..."
+                className="w-full border border-base-300 bg-base-100 text-base-content/80 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 resize-none font-semibold"
+              />
+            </div>
+          </form>
+        ) : showAddNewsForm ? (
           <form id="add-news-form" onSubmit={handleAddNews} className="space-y-4 bg-base-100 p-6 border border-base-350 rounded-2xl shadow-xs text-left w-full">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-extrabold uppercase text-base-content/90">News Title</label>
@@ -172,13 +261,40 @@ export default function NewsOverlay({
           </form>
         ) : selectedNews ? (
           <div className="space-y-5">
-            <button
-              type="button"
-              onClick={() => setSelectedNews(null)}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to news
-            </button>
+            <div className="flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => setSelectedNews(null)}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to news
+              </button>
+              {canManageNews && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditTitle(selectedNews.title);
+                      setEditContent(selectedNews.content || selectedNews.description || "");
+                      setEditVideoUrl(selectedNews.video_url || "");
+                      setIsEditing(true);
+                    }}
+                    className="btn btn-outline btn-xs gap-1 rounded-lg cursor-pointer"
+                    title="Edit News"
+                  >
+                    <Pencil className="h-3.5 w-3.5" /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteNews}
+                    className="btn btn-error btn-outline btn-xs gap-1 rounded-lg cursor-pointer"
+                    title="Delete News"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
             <article className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm space-y-4">
               <div className="space-y-2">
                 <h3 className="text-xl font-black text-base-content">{selectedNews.title}</h3>
@@ -190,14 +306,16 @@ export default function NewsOverlay({
                 {selectedNews.content ? selectedNews.content.replace(/---[\s\S]*?---/, "").replace(/#[\s\S]*?\n/, "").trim() : selectedNews.description}
               </p>
               {selectedNews.video_url && (
-                <a
-                  href={selectedNews.video_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn btn-outline btn-sm"
-                >
-                  Watch related video
-                </a>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <a
+                    href={selectedNews.video_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-outline btn-sm rounded-xl font-bold text-xs"
+                  >
+                    Watch related video
+                  </a>
+                </div>
               )}
             </article>
           </div>
