@@ -1,5 +1,4 @@
-"use client";
-
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +20,8 @@ import {
   HelpCircle,
   LucideIcon,
   User,
+  MapIcon,
+  InboxIcon,
   History,
   LogOut,
   X,
@@ -39,7 +40,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   MapPin,
   Trophy,
   Sparkles,
-  Calendar,
+  InboxIcon,
   Shield,
   TrendingUp,
   GraduationCap,
@@ -51,12 +52,10 @@ interface SidebarProps {
   currentTier?: string;
   onChangeTier?: (tier: string) => void;
 }
-export default function Sidebar({
-  isOpen,
-  onClose,
-}: SidebarProps) {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, categories } = useAuth();
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   // Helper to render Lucide icons dynamically from their string names
   const renderIcon = (iconName: string, isActive: boolean) => {
@@ -65,7 +64,9 @@ export default function Sidebar({
     return (
       <IconComponent
         className={`h-5 w-5 transition-colors duration-200 ${
-          isActive ? "text-primary" : "text-base-content/50 group-hover:text-base-content/80"
+          isActive
+            ? "text-primary"
+            : "text-base-content/50 group-hover:text-base-content/80"
         }`}
       />
     );
@@ -155,34 +156,99 @@ export default function Sidebar({
                 Categories
               </h3>
               <div className="space-y-0.5">
-                {categories.map((category) => {
-                  const path = `/wiki/${category.slug}`;
-                  const isActive = pathname === path;
+                {(showAllCategories ? categories : categories.slice(0, 5)).map(
+                  (category) => {
+                    const path = `/wiki/${category.slug}`;
+                    const isActive = pathname === path;
 
-                  return (
-                    <Link
-                      key={category.category_id}
-                      href={path}
-                      onClick={() => {
-                        // Close sidebar on mobile after clicking a link
-                        if (window.innerWidth < 1024) {
-                          onClose();
-                        }
-                      }}
-                      className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
-                        isActive
-                          ? "bg-primary/10 text-primary font-bold"
-                          : "text-base-content/75 hover:text-base-content hover:bg-base-200"
-                      }`}
-                    >
-                      {renderIcon(category.icon || "BookOpen", isActive)}
-                      <span className="truncate">{category.name}</span>
-                    </Link>
-                  );
-                })}
+                    return (
+                      <Link
+                        key={category.category_id}
+                        href={path}
+                        onClick={() => {
+                          // Close sidebar on mobile after clicking a link
+                          if (window.innerWidth < 1024) {
+                            onClose();
+                          }
+                        }}
+                        className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                          isActive
+                            ? "bg-primary/10 text-primary font-bold"
+                            : "text-base-content/75 hover:text-base-content hover:bg-base-200"
+                        }`}
+                      >
+                        {renderIcon(category.icon || "BookOpen", isActive)}
+                        <span className="truncate">{category.name}</span>
+                      </Link>
+                    );
+                  }
+                )}
+                {categories.length > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllCategories(!showAllCategories)}
+                    className="flex w-full items-center justify-between px-3 py-2 text-[12px] font-semibold text-primary hover:bg-base-200 rounded-lg cursor-pointer transition-colors duration-200 mt-0.5 text-left"
+                  >
+                    <span>
+                      {showAllCategories
+                        ? "Show Less"
+                        : `+ ${categories.length - 5} More`}
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           )}
+
+          {/* Calander/Campus Map Section */}
+
+          <div className="space-y-1 border-t border-base-200 pt-2">
+            <h3 className="px-3 text-[10px] font-bold tracking-wider text-base-content/40 uppercase">
+              Tools
+            </h3>
+            <div className="space-y-0.5">
+              <Link
+                href={"/calender"}
+                onClick={() => {
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                  pathname === "/calender"
+                    ? "bg-primary/10 text-primary font-bold"
+                    : "text-base-content/75 hover:text-base-content hover:bg-base-200"
+                }`}
+              >
+                <Calendar
+                  className={`h-5 w-5 transition-colors duration-200 ${
+                    pathname === "/calender"
+                      ? "text-primary"
+                      : "text-base-content/50 group-hover:text-base-content/80"
+                  }`}
+                />
+                <span className="truncate">Academic Calender</span>
+              </Link>
+              <Link
+                href={"/map"}
+                onClick={() => {
+                  if (window.innerWidth < 1024) onClose();
+                }}
+                className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                  pathname === "/map"
+                    ? "bg-primary/10 text-primary font-bold"
+                    : "text-base-content/75 hover:text-base-content hover:bg-base-200"
+                }`}
+              >
+                <MapIcon
+                  className={`h-5 w-5 transition-colors duration-200 ${
+                    pathname === "/map"
+                      ? "text-primary"
+                      : "text-base-content/50 group-hover:text-base-content/80"
+                  }`}
+                />
+                <span className="truncate">Campus Map</span>
+              </Link>
+            </div>
+          </div>
 
           {/* Account/Profile Section */}
           {user ? (
@@ -191,7 +257,7 @@ export default function Sidebar({
                 Account
               </h3>
               <div className="space-y-0.5">
-                 <Link
+                <Link
                   href="/user/profile"
                   onClick={() => {
                     if (window.innerWidth < 1024) onClose();
@@ -203,11 +269,11 @@ export default function Sidebar({
                   }`}
                 >
                   <History
-                  className={`h-5 w-5 transition-colors duration-200 ${
-                    pathname === "/user/profile"
-                      ? "text-primary"
-                      : "text-base-content/50 group-hover:text-base-content/80"
-                  }`}
+                    className={`h-5 w-5 transition-colors duration-200 ${
+                      pathname === "/user/profile"
+                        ? "text-primary"
+                        : "text-base-content/50 group-hover:text-base-content/80"
+                    }`}
                   />
                   <span className="truncate">My Contributions</span>
                 </Link>
