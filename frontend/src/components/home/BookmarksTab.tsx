@@ -12,7 +12,8 @@ import {
 import { db } from "@/lib/db";
 import { useViewMode } from "@/hooks/useViewMode";
 import ViewSwitcher from "@/components/helpers/ViewSwitcher";
-import { getGridClass, getIconBoxClass } from "@/lib/viewModes";
+import { getGridClass } from "@/lib/viewModes";
+import UnifiedViewItem from "@/components/helpers/UnifiedViewItem";
 
 interface BookmarkItem {
   id: string;
@@ -135,82 +136,24 @@ export default function BookmarksTab({
     const pagePath = getPagePath(item);
     const initial = (item.title.trim().charAt(0) || "?").toUpperCase();
 
-    if (view.startsWith("icon-")) {
-      return (
-        <div
-          key={item.id}
-          onClick={() => handleCardClick(pagePath)}
-          className="group relative flex flex-col items-center justify-center gap-2 p-2 rounded-xl hover:bg-primary/5 hover:border hover:border-primary cursor-pointer text-center"
-        >
-          <div
-            className={`${getIconBoxClass(view)} rounded-xl border border-base-300 bg-base-200 flex items-center justify-center text-primary font-bold`}
-          >
+    return (
+      <UnifiedViewItem
+        key={item.id}
+        view={view}
+        onClick={() => handleCardClick(pagePath)}
+        title={item.title}
+        avatar={
+          view.startsWith("icon-") ? (
             <span className="text-base-content/70 group-hover:text-primary transition-colors">
               {initial}
             </span>
-          </div>
-          <span className="text-xs font-medium text-base-content/80 group-hover:text-primary transition-colors duration-200 max-w-full break-words text-center">
-            {item.title}
-          </span>
-          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {renderDeleteBtn(item.id)}
-          </div>
-        </div>
-      );
-    }
-
-    if (view === "tiles") {
-      return (
-        <div
-          key={item.id}
-          onClick={() => handleCardClick(pagePath)}
-          className="card card-compact bg-base-100 border border-base-300 hover:border-primary/50 p-4 flex flex-col gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group cursor-pointer"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="text-sm font-semibold text-base-content leading-snug group-hover:text-primary transition-colors">
-              {item.title}
-            </h4>
-            {renderDeleteBtn(item.id)}
-          </div>
-        </div>
-      );
-    }
-
-    if (view === "details") {
-      return (
-        <div
-          key={item.id}
-          onClick={() => handleCardClick(pagePath)}
-          className="card card-compact bg-base-100 border border-base-300 hover:border-primary/50 p-3 flex flex-row items-center gap-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group cursor-pointer"
-        >
-          <div className="flex-1 min-w-0">
-            <h4 className="text-xs md:text-sm font-semibold text-base-content truncate group-hover:text-primary transition-colors">
-              {item.title}
-            </h4>
-          </div>
-          <div className="shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-            {renderDeleteBtn(item.id)}
-          </div>
-        </div>
-      );
-    }
-
-    // default (original slim row card)
-    return (
-      <div
-        key={item.id}
-        onClick={() => handleCardClick(pagePath)}
-        className="card card-compact bg-base-100 border border-base-300 hover:border-primary/50 p-4 flex flex-row items-center justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md group cursor-pointer"
-      >
-        <div className="min-w-0 flex-1 pr-3">
-          <h4 className="text-xs md:text-sm font-semibold text-base-content truncate leading-snug group-hover:text-primary transition-colors">
-            {item.title}
-          </h4>
-        </div>
-        <div className="flex items-center gap-1 shrink-0 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          {renderDeleteBtn(item.id)}
-        </div>
-      </div>
+          ) : undefined
+        }
+        iconBoxClassName="border-base-300 bg-base-200 text-primary font-bold"
+        noIcon={!view.startsWith("icon-")}
+        topRightAction={view === "tiles" || view.startsWith("icon-") ? renderDeleteBtn(item.id) : undefined}
+        action={view === "details" || view === "default" ? renderDeleteBtn(item.id) : undefined}
+      />
     );
   };
 

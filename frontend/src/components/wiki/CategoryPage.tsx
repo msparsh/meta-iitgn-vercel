@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, PlusCircle, Pencil, Sparkles, Building2, Users2, Trophy, Tent, MapPin, FlaskConical, Calendar, Shield, TrendingUp, GraduationCap, FileText, ChevronRight } from "lucide-react";
+import { BookOpen, PlusCircle, Pencil, Sparkles, Building2, Users2, Trophy, Tent, MapPin, FlaskConical, Calendar, Shield, TrendingUp, GraduationCap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiService } from "@/api";
 import CategoryEditModal from "@/components/overlays/CategoryEditModal";
 import { useViewMode } from "@/hooks/useViewMode";
 import ViewSwitcher from "@/components/helpers/ViewSwitcher";
-import { getGridClass, getIconBoxClass, humanizeSlug } from "@/lib/viewModes";
+import { getGridClass, humanizeSlug } from "@/lib/viewModes";
+import UnifiedViewItem from "@/components/helpers/UnifiedViewItem";
 
 export interface Article {
   slug: string;
@@ -206,90 +207,15 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
                   };
                   const href = `/wiki/${categorySlug}/${article.slug}`;
 
-                  if (view === "tiles") {
-                    return (
-                      <Link
-                        key={article.slug}
-                        href={href}
-                        className="card card-compact card-border flex flex-col items-start gap-3 p-4 md:p-5 bg-base-100 border-base-200 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-1 hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all duration-300 group cursor-pointer"
-                      >
-                        <div
-                          className="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-sm transition-all duration-300"
-                          style={iconBoxStyle}
-                        >
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <h3 className="min-w-0 text-sm md:text-base font-bold text-base-content font-serif group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                          {article.title}
-                        </h3>
-                      </Link>
-                    );
-                  }
-
-                  if (view === "details") {
-                    return (
-                      <Link
-                        key={article.slug}
-                        href={href}
-                        className="card card-compact card-border w-full flex flex-row items-center gap-3 p-3 md:p-4 bg-base-100 border-base-200 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all duration-300 group cursor-pointer"
-                      >
-                        <div
-                          className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-sm transition-all duration-300"
-                          style={iconBoxStyle}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm md:text-base font-bold text-base-content font-serif group-hover:text-primary transition-colors duration-300 truncate">
-                            {article.title}
-                          </h3>
-                          <p className="text-xs text-base-content/50 truncate">
-                            {humanizeSlug(article.slug)}
-                          </p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-base-content/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
-                      </Link>
-                    );
-                  }
-
-                  if (view.startsWith("icon-")) {
-                    return (
-                      <Link
-                        key={article.slug}
-                        href={href}
-                        className="group flex flex-col items-center justify-center gap-2 p-2 rounded-xl hover:bg-primary/5 hover:border hover:border-primary cursor-pointer text-center"
-                      >
-                        <div
-                          className={`${getIconBoxClass(view)} rounded-xl border flex items-center justify-center`}
-                          style={iconBoxStyle}
-                        >
-                          <FileText className={getIconBoxClass(view)} />
-                        </div>
-                        <span className="text-xs font-medium text-base-content/80 group-hover:text-primary transition-colors duration-200 max-w-full break-words text-center">
-                          {article.title}
-                        </span>
-                      </Link>
-                    );
-                  }
-
-                  // default: horizontal compact row (original layout)
                   return (
-                    <Link
+                    <UnifiedViewItem
                       key={article.slug}
+                      view={view}
                       href={href}
-                      className="card card-compact card-border w-full flex flex-row items-center gap-3 p-4 md:p-5 bg-base-100 border-base-200 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-1 hover:border-primary hover:bg-primary/5 active:scale-[0.98] transition-all duration-300 group cursor-pointer"
-                    >
-                      <div
-                        className="w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 shadow-sm transition-all duration-300"
-                        style={iconBoxStyle}
-                      >
-                        <FileText className="h-4.5 w-4.5" />
-                      </div>
-                      <h3 className="flex-1 min-w-0 text-sm md:text-base font-bold text-base-content font-serif group-hover:text-primary transition-colors duration-300 truncate">
-                        {article.title}
-                      </h3>
-                      <ChevronRight className="h-4.5 w-4.5 shrink-0 text-base-content/30 group-hover:text-primary group-hover:translate-x-0.5 transition-all duration-300" />
-                    </Link>
+                      title={article.title}
+                      subtitle={view === "details" ? humanizeSlug(article.slug) : undefined}
+                      iconBoxStyle={iconBoxStyle}
+                    />
                   );
                 })}
                 {loadingMore && !view.startsWith("icon-") && (

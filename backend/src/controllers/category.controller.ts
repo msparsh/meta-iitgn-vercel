@@ -17,17 +17,28 @@ export const getCategories = async (req: Request, res: Response) => {
       orderBy: { name: "asc" }
     });
 
-    // Count live pages per category using the `category` column.
-    const rawCounts = await prisma.live_pages.groupBy({
+    // Count live pages per category using both category and subcategory columns.
+    const rawCategoryCounts = await prisma.live_pages.groupBy({
       by: ['category'],
       where: { deleted_at: null, category: { not: null } },
       _count: { _all: true }
     });
 
+    const rawSubcategoryCounts = await prisma.live_pages.groupBy({
+      by: ['subcategory'],
+      where: { deleted_at: null, subcategory: { not: null } },
+      _count: { _all: true }
+    });
+
     const counts: Record<string, number> = {};
-    for (const row of rawCounts) {
+    for (const row of rawCategoryCounts) {
       if (row.category) {
-        counts[row.category] = row._count._all;
+        counts[row.category] = (counts[row.category] || 0) + row._count._all;
+      }
+    }
+    for (const row of rawSubcategoryCounts) {
+      if (row.subcategory) {
+        counts[row.subcategory] = (counts[row.subcategory] || 0) + row._count._all;
       }
     }
 
@@ -162,9 +173,17 @@ export const updateCategory = async (req: Request, res: Response) => {
           where: { category: existing.slug },
           data: { category: data.slug },
         });
+        await tx.live_pages.updateMany({
+          where: { subcategory: existing.slug },
+          data: { subcategory: data.slug },
+        });
         await tx.pending_pages.updateMany({
           where: { category: existing.slug },
           data: { category: data.slug },
+        });
+        await tx.pending_pages.updateMany({
+          where: { subcategory: existing.slug },
+          data: { subcategory: data.slug },
         });
       }
 
@@ -177,7 +196,13 @@ export const updateCategory = async (req: Request, res: Response) => {
     invalidateCategoriesCache();
 
     const count = await prisma.live_pages.count({
-      where: { deleted_at: null, subcategory: updated.slug }
+      where: {
+        deleted_at: null,
+        OR: [
+          { category: updated.slug },
+          { subcategory: updated.slug }
+        ]
+      }
     });
 
     return res.json({
@@ -295,18 +320,24 @@ export const getCategoryArticles = async (req: Request, res: Response) => {
     const limitNum = parseInt(req.query.limit as string, 10) || 6;
     const skip = (pageNum - 1) * limitNum;
 
-    // Pages are associated with a category via the `category` column.
+    // Pages are associated with a category via the `category` or `subcategory` columns.
     const totalMatched = await prisma.live_pages.count({
       where: {
         deleted_at: null,
-        category: categorySlug
+        OR: [
+          { category: categorySlug },
+          { subcategory: categorySlug }
+        ]
       }
     });
 
     const paginatedPages = await prisma.live_pages.findMany({
       where: {
         deleted_at: null,
-        category: categorySlug
+        OR: [
+          { category: categorySlug },
+          { subcategory: categorySlug }
+        ]
       },
       select: {
         page_id: true,

@@ -7,6 +7,10 @@ import { ArrowRight, BookOpen, PlusCircle, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiService } from "@/api";
 import Avatar from "@/components/helpers/Avatar";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewSwitcher from "@/components/helpers/ViewSwitcher";
+import { getGridClass } from "@/lib/viewModes";
+import UnifiedViewItem from "@/components/helpers/UnifiedViewItem";
 
 interface BlogAuthor {
   user_id: number;
@@ -25,7 +29,7 @@ interface BlogItem {
 }
 
 const BlogSkeleton = () => (
-  <div className="card card-compact card-bordered flex-1 min-w-75 md:max-w-[48%] lg:max-w-[32%] flex flex-col justify-between p-4 md:p-6 bg-base-100 border-base-200 shadow-xs animate-pulse select-none">
+  <div className="card card-compact card-bordered w-full flex flex-col justify-between p-4 md:p-6 bg-base-100 border-base-200 shadow-xs animate-pulse select-none">
     <div className="space-y-3">
       <div className="h-4 bg-base-300 rounded-md w-3/4"></div>
       <div className="space-y-2">
@@ -48,6 +52,8 @@ export default function BlogGridPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  const [view, setView] = useViewMode("meta_iitgn_blog_view");
 
   const loadBlogs = async (pageNum = 1, append = false) => {
     try {
@@ -122,8 +128,16 @@ export default function BlogGridPage() {
 
         {/* Blogs Grid */}
         <div>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-serif font-bold text-base-content tracking-tight">
+              Published Blogs
+            </h2>
+
+            <ViewSwitcher view={view} onChange={setView} />
+          </div>
+
           {loading ? (
-            <div className="flex flex-col md:flex-row gap-6 flex-wrap w-full">
+            <div className={getGridClass(view)}>
               <BlogSkeleton />
               <BlogSkeleton />
               <BlogSkeleton />
@@ -134,32 +148,21 @@ export default function BlogGridPage() {
             </div>
           ) : (
             <div className="w-full flex flex-col gap-8">
-              <div className="flex flex-col md:flex-row gap-6 flex-wrap">
-                {blogs.map((blog) => (
-                  <div
-                    key={blog.blog_id}
-                    className="card card-compact card-bordered flex-1 min-w-[280px] md:max-w-[48%] lg:max-w-[32%] flex flex-col justify-between p-4 md:p-6 bg-base-100 border-base-200 shadow-xs hover:shadow-md hover:-translate-y-1 hover:border-primary/40 transition-all duration-300 group"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-[10px] text-base-content/40 uppercase font-black tracking-wider">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(blog.created_at)}
-                        </span>
-                        <span>{blog.view_count} views</span>
-                      </div>
-                      
-                      <h3 className="text-sm md:text-base font-bold text-base-content font-serif group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                        {blog.title}
-                      </h3>
-
-                      <p className="text-xs text-base-content/60 leading-relaxed line-clamp-3">
-                        {blog.description}
-                      </p>
+              <div className={getGridClass(view)}>
+                {blogs.map((blog) => {
+                  const href = `/blog/${blog.slug}`;
+                  const metaContent = (
+                    <div className="flex items-center justify-between text-[10px] text-base-content/40 uppercase font-black tracking-wider">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {formatDate(blog.created_at)}
+                      </span>
+                      <span>{blog.view_count} views</span>
                     </div>
+                  );
 
-                    <div className="pt-6 flex items-center justify-between border-t border-base-200 mt-4">
-                      {/* Author Info */}
+                  const actionContent = (
+                    <>
                       <div className="flex items-center gap-2">
                         <Avatar
                           seed={String(blog.original_author.user_id)}
@@ -170,17 +173,45 @@ export default function BlogGridPage() {
                           {blog.original_author.name}
                         </span>
                       </div>
-
-                      <Link
-                        href={`/blog/${blog.slug}`}
-                        className="inline-flex items-center gap-1 text-[10px] font-black text-primary hover:underline transition-colors uppercase tracking-wider cursor-pointer"
-                      >
+                      <div className="inline-flex items-center gap-1 text-[10px] font-black text-primary hover:underline transition-colors uppercase tracking-wider cursor-pointer">
                         <span>Read Blog</span>
                         <ArrowRight className="h-3 w-3 transform group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                      </div>
+                    </>
+                  );
+
+                  const authorAvatar = (
+                    <Avatar
+                      seed={String(blog.original_author.user_id)}
+                      name={blog.original_author.name}
+                      className="h-full w-full object-cover rounded-md"
+                    />
+                  );
+
+                  return (
+                    <UnifiedViewItem
+                      key={blog.blog_id}
+                      view={view}
+                      href={href}
+                      title={blog.title}
+                      description={blog.description}
+                      avatar={authorAvatar}
+                      meta={view === "tiles" ? metaContent : undefined}
+                      subtitle={
+                        view === "details" || view === "default" ? (
+                          <span className="flex items-center gap-2 text-[10px] text-base-content/40 uppercase font-black tracking-wider mt-1 flex-wrap">
+                            <span>By {blog.original_author.name}</span>
+                            <span>•</span>
+                            <span>{formatDate(blog.created_at)}</span>
+                            <span>•</span>
+                            <span>{blog.view_count} views</span>
+                          </span>
+                        ) : undefined
+                      }
+                      action={view === "tiles" ? actionContent : undefined}
+                    />
+                  );
+                })}
                 {loadingMore && (
                   <>
                     <BlogSkeleton />
