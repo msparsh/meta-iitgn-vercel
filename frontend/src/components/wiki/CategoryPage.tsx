@@ -122,7 +122,13 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
         {/* Category Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div className="space-y-3 flex-1">
-            <div className="inline-flex items-center justify-center p-3 bg-primary/10 text-primary rounded-2xl shadow-sm">
+            <div
+              className="inline-flex items-center justify-center p-3 rounded-2xl shadow-sm"
+              style={{
+                backgroundColor: `${category.color || "#4f46e5"}1a`,
+                color: category.color || "#4f46e5",
+              }}
+            >
               {(() => {
                 const IconComponent = ICON_MAP[category.icon || "BookOpen"] || BookOpen;
                 return <IconComponent className="h-6 w-6" />;
