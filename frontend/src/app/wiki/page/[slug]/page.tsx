@@ -93,7 +93,7 @@ ${templateRows}
 
 Write your content here...`;
 
-    return <WikiClient initialMarkdown={template} defaultEditing={true} />;
+    return <WikiClient initialMarkdown={template} defaultEditing={true} categorySlug={category} />;
   }
 
   let articleContent: string | undefined = undefined;
