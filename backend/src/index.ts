@@ -10,6 +10,7 @@ import BookmarksRouter from "./routes/bookmarks.js"
 import BlogRouter from "./routes/blogs.js"
 import CollegeInfoRouter from "./routes/collegeinfo.js"
 import AuditLogRouter from "./routes/auditLogs.js";
+import PaperRouter from "./routes/paper.js"
 
 const router = Router();
 
@@ -31,5 +32,6 @@ router.use("/news", NewsRouter);
 router.use("/media", MediaRouter);
 router.use("/bookmarks", BookmarksRouter);
 router.use("/blogs", BlogRouter);
+router.use("/paper",PaperRouter)
 
 export default router;

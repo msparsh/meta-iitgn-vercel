@@ -20,6 +20,15 @@ enum pending_status {
   rejected
 }
 
+enum exam_type {
+  quiz_1       @map("Quiz-1")
+  quiz_2       @map("Quiz-2")
+  midsem       @map("Midsem")
+  endsem       @map("Endsem")
+  assignment_1 @map("Assignment-1")
+  assignment_2 @map("Assignment-2")
+}
+
 model users {
   user_id                 Int                     @id @default(autoincrement())
   name                    String
@@ -51,6 +60,7 @@ model users {
   revision_blogs_authored revision_blogs[]        @relation("RevisionBlogOriginalAuthor")
   revision_blogs_created  revision_blogs[]        @relation("RevisionBlogCreator")
   readme                  user_readmes?
+  papers                  papers[]                @relation("Owner")
 }
 
 model live_pages {
@@ -366,4 +376,37 @@ model user_readmes {
 }
 
 
+model papers {
+
+  paper_id          Int       @id @default(autoincrement())
+  owner_id          Int
+  uploaded_by       String
+  uploaded_by_name  String
+  semester          Int       @default(1)
+  course_code       String
+  course_name       String
+  department        String
+  year              Int
+  exam_type         exam_type
+  downloads         Int       @default(0)
+
+  pdf_url           String
+  cloudinary_id     String
+
+  file_name         String
+  file_size         String?
+
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+// Relations
+  owner             users     @relation("Owner", fields: [owner_id], references: [user_id], onDelete: Cascade)
+
+  @@index([course_code])
+  @@index([department])
+  @@index([year(sort: Desc)])
+  @@index([owner_id])
+
+  @@unique([course_code, year, semester, exam_type])
+}
 
