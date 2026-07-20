@@ -23,7 +23,9 @@ import {
   UserCircle2,
   InboxIcon,
   LogOut,
+  PackageCheck,
   X,
+  Calendar,
 } from "lucide-react";
 import { SIDEBAR_SECTIONS } from "@/lib/constants";
 import { CategoryIcon } from "@/lib/categoryIcon";
@@ -179,7 +181,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 Categories
               </h3>
               <div className="space-y-0.5">
-                {(showAllCategories ? categories : categories.slice(0, 5)).map(
+                {(showAllCategories ? categories : categories.slice(0, 4)).map(
                   (category) => {
                     const isActive =
                       activeOverlay === "portal" && activePortalCategory === category.slug;
@@ -215,7 +217,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     );
                   }
                 )}
-                {categories.length > 5 && (
+                {categories.length > 4 && (
                   <button
                     type="button"
                     onClick={() => setShowAllCategories(!showAllCategories)}
@@ -224,13 +226,61 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <span>
                       {showAllCategories
                         ? "Show Less"
-                        : `+ ${categories.length - 5} More`}
+                        : `+ ${categories.length - 4} More`}
                     </span>
                   </button>
                 )}
               </div>
             </div>
           )}
+
+          <div className="space-y-1 border-t border-base-200 pt-2">
+              <h3 className="px-3 text-[10px] font-bold tracking-wider text-base-content/40 uppercase">
+                Tools
+              </h3>
+              <div className="space-y-0.5">
+                <Link
+                  href="/paper"
+                  onClick={() => {
+                    if (window.innerWidth < 1024) onClose();
+                  }}
+                  className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                    pathname === "/paper"
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-base-content/75 hover:text-base-content hover:bg-base-200"
+                  }`}
+                >
+                  <PackageCheck
+                    className={`h-5 w-5 transition-colors duration-200 ${
+                      pathname === "/user/profile"
+                        ? "text-primary"
+                        : "text-base-content/50 group-hover:text-base-content/80"
+                    }`}
+                  />
+                  <span className="truncate">PYQs</span>
+                </Link>
+                <Link
+                  href="/calender"
+                  onClick={() => {
+                    if (window.innerWidth < 1024) onClose();
+                  }}
+                  className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                    pathname === "/calender"
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-base-content/75 hover:text-base-content hover:bg-base-200"
+                  }`}
+                >
+                  <Calendar
+                    className={`h-5 w-5 transition-colors duration-200 ${
+                      pathname === "/calender"
+                        ? "text-primary"
+                        : "text-base-content/50 group-hover:text-base-content/80"
+                    }`}
+                  />
+                  <span className="truncate">Academic Calender</span>
+                </Link>
+              </div>
+            </div>
 
           {/* Account/Profile Section */}
           {user ? (
