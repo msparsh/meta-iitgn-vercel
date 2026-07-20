@@ -30,6 +30,7 @@ import TriviaOverlay from "@/components/overlays/TriviaOverlay";
 import HistoryOverlay from "@/components/overlays/HistoryOverlay";
 import FeaturedEditOverlay from "@/components/overlays/FeaturedEditOverlay";
 import PortalOverlay from "@/components/overlays/PortalOverlay";
+import CategoriesOverlay from "@/components/overlays/CategoriesOverlay";
 
 let initialLoadDone = false;
 
@@ -429,6 +430,13 @@ export default function HomePage() {
         categorySlug: activePortalCategory,
       },
     },
+    categories: {
+      Component: CategoriesOverlay,
+      props: {
+        isOpen: activeOverlay === "categories",
+        onClose: () => router.back(),
+      },
+    },
   };
 
   if (initialDelay || authLoading || auth === null) {
@@ -581,6 +589,7 @@ export default function HomePage() {
       <HistoryOverlay {...(OVERLAYS.history.props as any)} />
       <FeaturedEditOverlay {...(OVERLAYS["featured-edit"].props as any)} />
       <PortalOverlay {...(OVERLAYS.portal.props as any)} />
+      <CategoriesOverlay {...(OVERLAYS.categories.props as any)} />
     </div>
   );
 }

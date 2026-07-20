@@ -71,6 +71,10 @@ model live_pages {
   deleted_at         DateTime?
   version            Int?
   view_count         Int              @default(0)
+  // Per-page icon + color (Lucide key or emoji, like categories). Editable by
+  // staff via the page header's icon picker; null means "use default icon".
+  icon               String?
+  color              String?
 
   // Relations
   original_author    users            @relation("OriginalAuthor", fields: [original_author_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
@@ -223,8 +227,13 @@ model categories {
   is_pinned      Boolean  @default(false)
   icon           String   @default("BookOpen")
   color          String   @default("blue")
+  parent_id      Int?
+  parent         categories?  @relation("CategoryHierarchy", fields: [parent_id], references: [category_id], onDelete: SetNull)
+  children       categories[] @relation("CategoryHierarchy")
   created_at     DateTime @default(now())
   updated_at     DateTime @default(now()) @updatedAt
+
+  @@index([parent_id], name: "idx_categories_parent")
 }
 
 model news {

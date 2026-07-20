@@ -57,9 +57,23 @@ export const getCategories = async (req: Request, res: Response) => {
 
 export const createCategory = async (req: Request, res: Response) => {
   try {
-    const { name, description, icon, color } = req.body;
+    const { name, description, icon, color, parent_id } = req.body;
     if (!name || !description) {
       return res.status(400).json({ error: "Name and description are required" });
+    }
+
+    let parentId: number | null = null;
+    if (parent_id !== undefined && parent_id !== null) {
+      parentId = Number(parent_id);
+      if (isNaN(parentId)) {
+        return res.status(400).json({ error: "Invalid parent category" });
+      }
+      const parent = await prisma.categories.findUnique({
+        where: { category_id: parentId }
+      });
+      if (!parent) {
+        return res.status(400).json({ error: "Parent category not found" });
+      }
     }
 
     const slug = name
@@ -86,7 +100,8 @@ export const createCategory = async (req: Request, res: Response) => {
         description,
         icon: icon || "BookOpen",
         color: color || "blue",
-        total_articles: 0
+        total_articles: 0,
+        parent_id: parentId
       }
     });
 
@@ -105,7 +120,7 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const { name, description, is_pinned, icon, color } = req.body;
+    const { name, description, is_pinned, icon, color, parent_id } = req.body;
 
     if (isNaN(id)) {
       return res.status(400).json({ error: "Invalid category ID" });
@@ -134,6 +149,46 @@ export const updateCategory = async (req: Request, res: Response) => {
 
     if (color !== undefined) {
       data.color = color;
+    }
+
+    if (parent_id !== undefined) {
+      if (parent_id === null) {
+        data.parent_id = null;
+      } else {
+        const parentId = Number(parent_id);
+        if (isNaN(parentId)) {
+          return res.status(400).json({ error: "Invalid parent category" });
+        }
+        if (parentId === id) {
+          return res.status(400).json({ error: "A category cannot be its own parent" });
+        }
+
+        // Cycle guard: walk up the proposed parent's ancestor chain. If this
+        // category (id) appears anywhere in it, the assignment would create a
+        // cycle (setting a descendant as parent).
+        const allCategories = await prisma.categories.findMany({
+          select: { category_id: true, parent_id: true }
+        });
+        const parentMap = new Map<number, number | null>();
+        for (const c of allCategories) {
+          parentMap.set(c.category_id, c.parent_id);
+        }
+        if (!parentMap.has(parentId)) {
+          return res.status(400).json({ error: "Parent category not found" });
+        }
+        let cursor: number | null = parentId;
+        const visited = new Set<number>();
+        while (cursor !== null && cursor !== undefined) {
+          if (cursor === id) {
+            return res.status(400).json({ error: "Cannot set a descendant as parent" });
+          }
+          if (visited.has(cursor)) break; // safety against pre-existing cycles
+          visited.add(cursor);
+          cursor = parentMap.get(cursor) ?? null;
+        }
+
+        data.parent_id = parentId;
+      }
     }
 
     if (name !== undefined) {

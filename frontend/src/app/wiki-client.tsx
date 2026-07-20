@@ -28,6 +28,9 @@ import GenericOverlayModal from "@/components/overlays/GenericOverlayModal";
 import RevisionsView from "@/components/wiki/RevisionsView";
 import PendingChangesView from "@/components/wiki/PendingChangesView";
 import WikiInfoBox from "@/components/wiki/WikiInfoBox";
+import { CategoryIcon } from "@/lib/categoryIcon";
+import CategoryIconPicker from "@/components/overlays/CategoryIconPicker";
+import { DEFAULT_ICON, DEFAULT_COLOR } from "@/lib/categoryIcon";
 
 // Dynamically import MilkdownEditor so it doesn't run during SSR
 const MilkdownEditor = dynamic(
@@ -47,6 +50,9 @@ interface WikiClientProps {
   updatedAt?: string;
   updatedByName?: string | null;
   contributors?: any;
+  // Per-page icon + color, echoed from the page's `icon`/`color` columns.
+  initialIcon?: string;
+  initialColor?: string;
 }
 
 export default function WikiClient({
@@ -59,6 +65,8 @@ export default function WikiClient({
   updatedAt,
   updatedByName,
   contributors,
+  initialIcon,
+  initialColor,
 }: WikiClientProps) {
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP
   const { user, loading: authLoading } = useAuth();
@@ -90,6 +98,31 @@ export default function WikiClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showHelpConfirm, setShowHelpConfirm] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Page icon picker state (admin/moderator only) — mirrors CategoryPage: a
+  // page has its own icon+color/emoji, editable from the article header.
+  const [pageIcon, setPageIcon] = useState(initialIcon || DEFAULT_ICON);
+  const [pageColor, setPageColor] = useState(initialColor || DEFAULT_COLOR);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const canManagePage = user?.role === "admin" || user?.role === "moderator";
+
+  const handleIconSave = async (icon: string, color: string) => {
+    let currentSlug = initialMetadata?.slug;
+    if (!currentSlug && typeof window !== "undefined") {
+      currentSlug = window.location.pathname.split("/").pop();
+    }
+    if (!currentSlug || !dbPageId) return;
+    try {
+      await apiService.updatePage(currentSlug, { icon, color });
+      setPageIcon(icon);
+      setPageColor(color);
+      toast.success("Icon updated");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || "Failed to update icon");
+      throw err;
+    }
+  };
 
   // Refs for stabilizing callbacks that depend on changing props
   const dbPageIdRef = useRef(dbPageId);
@@ -396,7 +429,7 @@ export default function WikiClient({
       }
       await apiService.deletePage(currentSlug);
       toast.success("Article deleted successfully.");
-      router.push(`/wiki/${categorySlug || "campus"}`);
+      router.push("/");
     } catch (err: any) {
       console.error("Error deleting article:", err);
       toast.error(
@@ -706,19 +739,57 @@ export default function WikiClient({
             )}
             {/* Title Header (Separated from editor to prevent accidental deletion) */}
             {(!isProfile || !isEditing) && (
-              <div className="flex items-start justify-between gap-4">
-                {isEditing ? (
-                  <EditableCell
-                    initialValue={parsed.title}
-                    onChange={handleTitleChange}
-                    placeholder="Untitled Page"
-                    className="text-3xl sm:text-4xl font-display font-black tracking-tight text-base-content w-full border-none focus:outline-none focus:ring-0 mb-8 bg-transparent placeholder-base-content/30"
-                  />
-                ) : (
-                  <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-base-content mb-8">
-                    {parsed.title}
-                  </h1>
-                )}
+              <div className="flex items-start gap-4">
+                {/* Page icon — clickable icon/emoji picker for staff */}
+                <div className="relative pt-1 shrink-0">
+                  {canManagePage ? (
+                    <button
+                      type="button"
+                      onClick={() => setIconPickerOpen((o) => !o)}
+                      className="inline-flex items-center justify-center p-3 rounded-2xl shadow-sm transition-transform duration-200 cursor-pointer hover:scale-105 active:scale-95"
+                      style={{
+                        backgroundColor: `${pageColor || DEFAULT_COLOR}1a`,
+                        color: pageColor || DEFAULT_COLOR,
+                      }}
+                      title="Set icon"
+                    >
+                      <CategoryIcon icon={pageIcon} size={24} />
+                    </button>
+                  ) : (
+                    <div
+                      className="inline-flex items-center justify-center p-3 rounded-2xl shadow-sm"
+                      style={{
+                        backgroundColor: `${pageColor || DEFAULT_COLOR}1a`,
+                        color: pageColor || DEFAULT_COLOR,
+                      }}
+                    >
+                      <CategoryIcon icon={pageIcon} size={24} />
+                    </div>
+                  )}
+                  {iconPickerOpen && canManagePage && (
+                    <CategoryIconPicker
+                      currentIcon={pageIcon}
+                      currentColor={pageColor}
+                      onSave={handleIconSave}
+                      onClose={() => setIconPickerOpen(false)}
+                    />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <EditableCell
+                      initialValue={parsed.title}
+                      onChange={handleTitleChange}
+                      placeholder="Untitled Page"
+                      className="text-3xl sm:text-4xl font-display font-black tracking-tight text-base-content w-full border-none focus:outline-none focus:ring-0 mb-8 bg-transparent placeholder-base-content/30"
+                    />
+                  ) : (
+                    <h1 className="text-3xl sm:text-4xl font-display font-black tracking-tight text-base-content mb-8">
+                      {parsed.title}
+                    </h1>
+                  )}
+                </div>
               </div>
             )}
 

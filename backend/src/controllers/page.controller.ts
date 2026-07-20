@@ -643,7 +643,7 @@ export const getPageCount = async (req: Request, res: Response) => {
  */
 export const createPage = async (req: Request, res: Response) => {
   try {
-    const { title, content, metadata, video_url, slug: customSlug } = req.body;
+    const { title, content, metadata, video_url, slug: customSlug, icon, color } = req.body;
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
     }
@@ -689,6 +689,8 @@ export const createPage = async (req: Request, res: Response) => {
           original_author_id: creatorId,
           contributors: [creatorName],
           version: 1,
+          icon: icon ?? null,
+          color: color ?? null,
         },
       });
 
@@ -761,7 +763,7 @@ export const createPage = async (req: Request, res: Response) => {
 export const updatePage = async (req: Request, res: Response) => {
   try {
     const slug = req.params.slug as string;
-    const { title, content, metadata, video_url, edit_summary } = req.body;
+    const { title, content, metadata, video_url, edit_summary, icon, color } = req.body;
 
     const editorId = Number(req.user.user_id);
 
@@ -856,6 +858,8 @@ export const updatePage = async (req: Request, res: Response) => {
           subcategory: parsedFields.subcategory,
           description: parsedFields.description,
           video_url: video_url !== undefined ? video_url : livePage.video_url,
+          icon: icon !== undefined ? icon : livePage.icon,
+          color: color !== undefined ? color : livePage.color,
           contributors,
           version: newVersion,
           updated_by: editorId,

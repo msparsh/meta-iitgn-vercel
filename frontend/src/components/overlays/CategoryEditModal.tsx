@@ -1,30 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useHomeStore } from "@/store/useHomeStore";
 import { apiService } from "@/api";
-import { ICON_MAP } from "@/components/wiki/CategoryPage";
-
-export const CATEGORY_COLORS = [
-  "#4f46e5", // indigo (brand)
-  "#3b82f6", // blue
-  "#0ea5e9", // sky
-  "#10b981", // emerald
-  "#84cc16", // lime
-  "#f59e0b", // amber
-  "#f97316", // orange
-  "#ef4444", // red
-  "#f43f5e", // rose
-  "#ec4899", // pink
-  "#a855f7", // purple
-  "#8b5cf6", // violet
-  "#14b8a6", // teal
-  "#64748b", // slate
-  "#0f172a", // near-black
-  "#78716c", // stone
-];
+import { DEFAULT_ICON, DEFAULT_COLOR } from "@/lib/categoryIcon";
 
 interface CategoryEditModalProps {
   category: {
@@ -34,17 +15,23 @@ interface CategoryEditModalProps {
     description: string;
     icon?: string;
     color?: string;
+    parent_id?: number | null;
   };
   onClose: () => void;
 }
 
 export default function CategoryEditModal({ category, onClose }: CategoryEditModalProps) {
-  const router = useRouter();
-  const { updateCategoryState } = useAuth();
+  const { categories, updateCategoryState } = useAuth();
+  const { setActivePortalCategory, setActiveOverlay } = useHomeStore();
   const [editName, setEditName] = useState(category.name);
   const [editDescription, setEditDescription] = useState(category.description);
-  const [editIcon, setEditIcon] = useState(category.icon || "BookOpen");
-  const [editColor, setEditColor] = useState<string>(category.color || "#4f46e5");
+  // Icon/color are no longer edited here (they're set via the icon popover on
+  // the category page); keep the current values so saving preserves them.
+  const editIcon = category.icon || DEFAULT_ICON;
+  const editColor = category.color || DEFAULT_COLOR;
+  const [editParentId, setEditParentId] = useState<string>(
+    category.parent_id != null ? String(category.parent_id) : ""
+  );
   const [editError, setEditError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -53,6 +40,26 @@ export default function CategoryEditModal({ category, onClose }: CategoryEditMod
   // hidden on small screens, so a double-tap on the header is the only way
   // to maximize there).
   const lastTapRef = useRef(0);
+
+  // Valid parent options exclude the category itself and all of its descendants
+  // (choosing one of those would create a cycle in the hierarchy).
+  const parentOptions = useMemo(() => {
+    const excluded = new Set<number>([category.category_id]);
+    // Iteratively collect descendants until no new ones are found.
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const c of categories) {
+        if (c.parent_id != null && excluded.has(c.parent_id) && !excluded.has(c.category_id)) {
+          excluded.add(c.category_id);
+          changed = true;
+        }
+      }
+    }
+    return categories
+      .filter((c) => !excluded.has(c.category_id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [categories, category.category_id]);
 
   const toggleMaximize = () => setIsMaximized((m) => !m);
 
@@ -80,13 +87,17 @@ export default function CategoryEditModal({ category, onClose }: CategoryEditMod
       const updatedCat = await apiService.updateCategory(category.category_id, {
         name: editName.trim(),
         description: editDescription.trim(),
-        icon: editIcon || "BookOpen",
+        icon: editIcon || DEFAULT_ICON,
         color: editColor,
+        parent_id: editParentId ? Number(editParentId) : null,
       });
       updateCategoryState(updatedCat);
       onClose();
+      // Categories are shown in the portal modal (not a route page), so on a
+      // rename open that modal for the (possibly new) slug instead of navigating.
       if (updatedCat.slug !== category.slug) {
-        router.push(`/wiki/${updatedCat.slug}`);
+        setActivePortalCategory(updatedCat.slug);
+        setActiveOverlay("portal");
       }
     } catch (err: any) {
       console.error(err);
@@ -166,61 +177,25 @@ export default function CategoryEditModal({ category, onClose }: CategoryEditMod
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-base-content/70 uppercase block">
-              Category Icon
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-base-content/70 uppercase">
+              Parent Category
             </label>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 bg-base-200 p-3.5 rounded-2xl border border-base-300 max-w-lg">
-              {Object.keys(ICON_MAP).map((iconKey) => {
-                const IconComponent = ICON_MAP[iconKey];
-                const isSelected = editIcon === iconKey;
-                return (
-                  <button
-                    key={iconKey}
-                    type="button"
-                    onClick={() => setEditIcon(iconKey)}
-                    className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 group ${isSelected
-                      ? "bg-primary border-primary text-primary-content shadow-md shadow-primary/20 scale-105"
-                      : "bg-base-100 border-base-300 text-base-content/70 hover:text-base-content hover:bg-base-200"
-                      }`}
-                    title={iconKey}
-                  >
-                    <IconComponent className="h-5 w-5" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-base-content/70 uppercase block">
-              Category Color
-            </label>
-            <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-w-lg">
-              {CATEGORY_COLORS.map((color) => {
-                const isSelected = editColor.toLowerCase() === color.toLowerCase();
-                return (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => setEditColor(color)}
-                    className={`relative w-9 h-9 rounded-full border-2 transition-all duration-200 cursor-pointer active:scale-95 ${isSelected
-                      ? "border-base-content scale-110 shadow-md"
-                      : "border-base-300 hover:scale-105"
-                      }`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                    aria-label={`Select color ${color}`}
-                  >
-                    {isSelected && (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="w-2.5 h-2.5 rounded-full bg-base-100 shadow" />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <select
+              value={editParentId}
+              onChange={(e) => setEditParentId(e.target.value)}
+              className="select select-bordered w-full text-base-content"
+            >
+              <option value="">None (top-level)</option>
+              {parentOptions.map((c) => (
+                <option key={c.category_id} value={c.category_id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-base-content/50">
+              If set, this category is shown inside its parent instead of the All Categories page.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 justify-end pt-2">

@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { Pencil, PlusCircle } from "lucide-react";
 import GenericOverlayModal from "@/components/overlays/GenericOverlayModal";
 import CategoryPage from "@/components/wiki/CategoryPage";
-import CategoryEditModal from "@/components/overlays/CategoryEditModal";
 import { useAuth } from "@/hooks/useAuth";
 
 interface PortalOverlayProps {
@@ -15,46 +11,22 @@ interface PortalOverlayProps {
 }
 
 /**
- * Opens a wiki category ("Quick Portal") inside the global modal instead of
- * navigating to a new page. The category page is rendered in an embedded mode
- * so its page-only chrome (edit/new buttons, nested edit modal) is suppressed;
- * those actions are surfaced into the modal header as optional `headerActions`,
- * separated from the standard profile + maximize controls by a divider.
+ * Opens a wiki category inside the global modal instead of navigating to a new
+ * page. CategoryPage is rendered in `embedded` mode (which only drops the
+ * page-only layout chrome); all of its management features — add subcategory,
+ * edit, new article, icon picker, subcategories — are kept, so the modal is a
+ * full-featured replacement for the former category route page.
  */
 export default function PortalOverlay({
   isOpen,
   onClose,
   categorySlug,
 }: PortalOverlayProps) {
-  const { categories, user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const { categories } = useAuth();
   if (!isOpen || !categorySlug) return null;
 
   const category = categories?.find((c) => c.slug === categorySlug);
   const title = category?.name || categorySlug;
-  const canManage = user?.role === "admin" || user?.role === "moderator";
-
-  const headerActions = canManage ? (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => setIsEditing(true)}
-        className="btn btn-ghost btn-sm font-semibold rounded-xl border border-base-300 bg-base-100 text-base-content/70 hover:text-base-content hover:bg-base-200 shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
-      >
-        <Pencil className="h-4.5 w-4.5" />
-        <span className="hidden sm:inline">Edit Category</span>
-      </button>
-      {/* Navigate to the new-article editor for this category. Intentionally
-          NOT calling onClose (router.back) here — that would pop history
-          instead of opening the editor. */}
-      <Link
-        href={`/wiki/${categorySlug}/new`}
-        className="btn btn-ghost btn-sm font-semibold rounded-xl border border-base-300 bg-base-100 text-base-content/70 hover:text-primary hover:bg-primary/10 shadow-xs transition-all duration-200 cursor-pointer active:scale-95"
-      >
-        <PlusCircle className="h-4.5 w-4.5" />
-        <span className="hidden sm:inline">New Article</span>
-      </Link>
-    </div>
-  ) : null;
 
   return (
     <GenericOverlayModal
@@ -62,12 +34,8 @@ export default function PortalOverlay({
       onClose={onClose}
       title={title}
       maxWidthClass="max-w-5xl"
-      headerActions={headerActions}
     >
       <CategoryPage categorySlug={categorySlug} embedded />
-      {isEditing && category && (
-        <CategoryEditModal category={category} onClose={() => setIsEditing(false)} />
-      )}
     </GenericOverlayModal>
   );
 }
