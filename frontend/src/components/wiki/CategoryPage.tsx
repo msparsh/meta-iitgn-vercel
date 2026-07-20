@@ -33,8 +33,10 @@ interface CategoryPageProps {
   embedded?: boolean;
 }
 
-// localStorage key for the user's preferred article-list view on category pages.
+// localStorage keys for the user's preferred list views on category pages.
+// Subcategories and Articles keep fully independent settings.
 const CATEGORY_VIEW_KEY = "meta_iitgn_category_view";
+const SUBCATEGORY_VIEW_KEY = "meta_iitgn_subcategory_view";
 
 // Module-level cache of a category's loaded article list. The PortalOverlay
 // unmounts CategoryPage whenever the Quick Portal closes, discarding its state,
@@ -82,6 +84,10 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
   // localStorage under a category-page-specific key; hydrated after mount to
   // avoid a hydration mismatch (the server render has no localStorage).
   const [view, setView] = useViewMode(CATEGORY_VIEW_KEY);
+
+  // Subcategory-list view — a separate persisted preference from the Articles
+  // view so changing one never disturbs the other.
+  const [subView, setSubView] = useViewMode(SUBCATEGORY_VIEW_KEY);
 
   // Edit Category modal state — the form itself lives in <CategoryEditModal />.
   const [isEditing, setIsEditing] = useState(false);
@@ -218,7 +224,6 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
               )}
               {iconPickerOpen && canManage && (
                 <CategoryIconPicker
-                  currentIcon={category.icon || "BookOpen"}
                   currentColor={category.color || "#4f46e5"}
                   onSave={handleIconSave}
                   onClose={() => setIconPickerOpen(false)}
@@ -276,42 +281,40 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
         {/* Subcategories — child categories live "inside" their parent */}
         {childCategories.length > 0 && (
           <div>
-            <h2 className="text-lg font-serif font-bold text-base-content tracking-tight mb-4">
-              Subcategories
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {childCategories.map((child) => (
-                <button
-                  key={child.slug}
-                  type="button"
-                  onClick={() => {
-                    setActivePortalCategory(child.slug);
-                    setActiveOverlay("portal");
-                  }}
-                  className={`card card-compact card-border relative flex flex-col justify-between p-4 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group bg-base-100 border border-base-200 hover:border-primary text-left w-full cursor-pointer`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 group-hover:opacity-90"
-                        style={{
-                          backgroundColor: `${child.color || "#4f46e5"}1a`,
-                          borderColor: `${child.color || "#4f46e5"}33`,
-                          color: child.color || "#4f46e5",
-                        }}
-                      >
-                        <CategoryIcon icon={child.icon} size={16} />
-                      </div>
-                      <h3 className="text-sm md:text-base font-bold text-base-content font-serif group-hover:text-primary transition-colors duration-300 truncate">
-                        {child.name}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-base-content/60 leading-relaxed line-clamp-4 md:pl-10.5">
-                      {child.description || "No description provided."}
-                    </p>
-                  </div>
-                </button>
-              ))}
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-lg font-serif font-bold text-base-content tracking-tight">
+                Subcategories
+              </h2>
+
+              <ViewSwitcher view={subView} onChange={setSubView} />
+            </div>
+            <div className={getGridClass(subView)}>
+              {childCategories.map((child) => {
+                const childColor = child.color || "#4f46e5";
+                const iconBoxStyle = {
+                  backgroundColor: `${childColor}1a`,
+                  borderColor: `${childColor}33`,
+                  color: childColor,
+                };
+                const childIcon = <CategoryIcon icon={child.icon} size={getIconSize(subView)} />;
+                const openChild = () => {
+                  setActivePortalCategory(child.slug);
+                  setActiveOverlay("portal");
+                };
+
+                return (
+                  <UnifiedViewItem
+                    key={child.slug}
+                    view={subView}
+                    onClick={openChild}
+                    title={child.name}
+                    description={subView === "details" ? undefined : (child.description || "No description provided.")}
+                    subtitle={subView === "details" ? humanizeSlug(child.slug) : undefined}
+                    icon={childIcon}
+                    iconBoxStyle={iconBoxStyle}
+                  />
+                );
+              })}
             </div>
           </div>
         )}

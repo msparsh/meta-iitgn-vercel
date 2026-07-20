@@ -833,7 +833,6 @@ export default function WikiClient({
                   )}
                   {iconPickerOpen && canManagePage && (
                     <CategoryIconPicker
-                      currentIcon={pageIcon}
                       currentColor={pageColor}
                       onSave={handleIconSave}
                       onClose={() => setIconPickerOpen(false)}

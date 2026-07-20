@@ -1,20 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback, type CSSProperties, type ReactNode } from "react";
+import { useState, useEffect, useMemo, useCallback, type CSSProperties, type ReactNode } from "react";
 import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDraggable,
-  useDroppable,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  closestCenter,
-} from "@dnd-kit/core";
-import {
-  GripVertical,
   SquarePen,
   Check,
   Search,
@@ -26,6 +13,7 @@ import {
   FolderOpen,
   SearchX,
   LayoutGrid,
+  MoreVertical,
 } from "lucide-react";
 import { CategoryIcon } from "@/lib/categoryIcon";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,13 +39,11 @@ const colorTint = (color: string, pct: number) =>
 const DEFAULT_COLOR = "#4f46e5";
 const MAX_PINS = 10;
 
-/** A sub-category chip. When management is enabled (and we're not selecting or
- * renaming), it gains a drag handle so it can be reparented onto a top-level
- * card. In selection mode the chip becomes a checkbox that toggles membership. */
+/** A sub-category chip. In selection mode the chip becomes a checkbox that
+ * toggles membership; otherwise clicking it opens the sub-category. */
 function SubChip({
   child,
   color,
-  draggable,
   selectionMode,
   selected,
   onOpen,
@@ -65,18 +51,11 @@ function SubChip({
 }: {
   child: Category;
   color: string;
-  draggable: boolean;
   selectionMode: boolean;
   selected: boolean;
   onOpen: (slug: string) => void;
   onToggleSelect: (id: number) => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `cat-${child.category_id}`,
-    data: { categoryId: child.category_id, parentId: child.parent_id },
-    disabled: !draggable,
-  });
-
   const selectionBox = (
     <span
       className={`inline-flex w-5 h-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
@@ -108,87 +87,55 @@ function SubChip({
   }
 
   return (
-    <span
-      ref={setNodeRef}
-      className={`group/chip inline-flex items-center gap-1.5 max-w-full rounded-lg border border-base-200 bg-base-100 hover:border-primary hover:bg-base-200 transition-all duration-150 ${
-        isDragging ? "opacity-40" : ""
-      }`}
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(child.slug);
+      }}
+      className="group/chip inline-flex items-center gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg border border-base-200 bg-base-100 hover:border-primary hover:bg-base-200 transition-all duration-150 cursor-pointer"
+      title={`Open ${child.name}`}
     >
-      {draggable && (
-        <button
-          type="button"
-          {...listeners}
-          {...attributes}
-          onClick={(e) => e.stopPropagation()}
-          className="p-1 cursor-grab active:cursor-grabbing text-base-content/30 hover:text-primary touch-none rounded-l-lg"
-          title={`Drag to move "${child.name}" under another category`}
-          aria-label={`Reparent ${child.name}`}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onOpen(child.slug);
+      <span
+        className="w-5 h-5 shrink-0 rounded-md border flex items-center justify-center"
+        style={{
+          backgroundColor: colorTint(color, 12),
+          borderColor: colorTint(color, 30),
+          color,
         }}
-        className="inline-flex items-center gap-1.5 max-w-full px-2.5 py-1.5 rounded-r-lg transition-colors cursor-pointer"
-        title={`Open ${child.name}`}
       >
+        <CategoryIcon icon={child.icon} size={12} />
+      </span>
+      <span className="text-xs font-semibold text-base-content/80 truncate group-hover/chip:text-primary transition-colors duration-150">
+        {child.name}
+      </span>
+      {child.total_articles > 0 && (
         <span
-          className="w-5 h-5 shrink-0 rounded-md border flex items-center justify-center"
-          style={{
-            backgroundColor: colorTint(color, 12),
-            borderColor: colorTint(color, 30),
-            color,
-          }}
+          className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 rounded-full"
+          style={{ backgroundColor: colorTint(color, 12), color }}
         >
-          <CategoryIcon icon={child.icon} size={12} />
+          {child.total_articles}
         </span>
-        <span className="text-xs font-semibold text-base-content/80 truncate group-hover/chip:text-primary transition-colors duration-150">
-          {child.name}
-        </span>
-        {child.total_articles > 0 && (
-          <span
-            className="text-[10px] font-bold shrink-0 px-1.5 py-0.5 rounded-full"
-            style={{ backgroundColor: colorTint(color, 12), color }}
-          >
-            {child.total_articles}
-          </span>
-        )}
-      </button>
-    </span>
+      )}
+    </button>
   );
 }
 
 /**
- * Wraps a top-level card in a droppable so sub-category chips can be dropped
- * onto it. Defined at module scope (not inside the overlay component) so it is
- * not re-created on every render — re-creating it would remount the node and
- * detach dnd-kit's drop ref mid-drag. `render` draws the actual card and
- * receives the droppable ref + hover state.
+ * Wraps a top-level card so the browse grid can render pinned + top-level
+ * categories through the same `renderCard` path. Defined at module scope (not
+ * inside the overlay component) so it is not re-created on every render.
  */
 function DroppableCard({
   cat,
   childCats,
-  dragEnabled,
   render,
 }: {
   cat: Category;
   childCats?: Category[];
-  dragEnabled: boolean;
-  render: (
-    cat: Category,
-    childCats?: Category[],
-    opts?: { droppableRef?: (node: HTMLElement | null) => void; isOver?: boolean }
-  ) => ReactNode;
+  render: (cat: Category, childCats?: Category[]) => ReactNode;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `cat-${cat.category_id}`,
-    disabled: !dragEnabled,
-  });
-  return <>{render(cat, childCats, { droppableRef: setNodeRef, isOver })}</>;
+  return <>{render(cat, childCats)}</>;
 }
 
 /**
@@ -208,7 +155,6 @@ function DroppableCard({
  *    their parent label), preserving the previous behaviour.
  *
  * Management features (admin / moderator only):
- *  - Drag a sub-category chip onto a top-level card to reparent it.
  *  - "Select" mode toggles checkboxes for bulk pin / unpin (respecting the 10-pin cap).
  *  - Inline rename via the title (double-click) or the rename action.
  *  - Create a sub-category directly inside a top-level card via its "+" action.
@@ -220,7 +166,6 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [pinningCategoryId, setPinningCategoryId] = useState<number | null>(null);
-  const [activeDragId, setActiveDragId] = useState<number | null>(null);
 
   // Bulk-select mode for pinning many categories at once.
   const [selectionMode, setSelectionMode] = useState(false);
@@ -232,6 +177,19 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
 
   // "Create sub-category inside" panel: the parent id whose form is open.
   const [addSubParentId, setAddSubParentId] = useState<number | null>(null);
+  // Tracks which category card's overflow menu is currently open (null = none).
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+
+  // Close the overflow menu when clicking anywhere outside of it.
+  useEffect(() => {
+    if (openMenuId === null) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".dropdown")) setOpenMenuId(null);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [openMenuId]);
 
   const canManageCategory = user?.role === "admin" || user?.role === "moderator";
 
@@ -286,10 +244,6 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
 
   const isSearching = searchQuery.trim().length > 0;
   const hasAnyCategories = categories.length > 0;
-
-  // Drag is only meaningful in browse mode, for managers, and not while doing
-  // other mutating interactions.
-  const dragEnabled = canManageCategory && !selectionMode && !isSearching && renamingId == null;
 
   // Open the matching category inside the Quick Portal modal (no navigation).
   const openCategory = (slug: string) => {
@@ -406,66 +360,9 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
     [renameValue, updateCategoryState]
   );
 
-  // ---- Drag to reparent ----------------------------------------------------
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
-  );
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveDragId((event.active.data.current?.categoryId as number) ?? null);
-  }, []);
-
-  const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveDragId(null);
-      if (!over) return;
-      const childId = active.data.current?.categoryId as number | undefined;
-      const overId = Number(String(over.id).replace(/^cat-/, ""));
-      if (childId == null || Number.isNaN(overId) || childId === overId) return;
-
-      const child = categories.find((c) => c.category_id === childId);
-      const target = categories.find((c) => c.category_id === overId);
-      if (!child || !target) return;
-      // Only allow dropping onto a top-level card, and never onto its current parent.
-      if (target.parent_id != null || child.parent_id === overId) return;
-
-      try {
-        const updated = await apiService.updateCategory(childId, {
-          parent_id: overId,
-        });
-        updateCategoryState(updated);
-        toast.success(`Moved "${child.name}" under "${target.name}"`);
-      } catch (err: any) {
-        console.error(err);
-        toast.error(err?.response?.data?.error || "Failed to move category");
-      }
-    },
-    [categories, updateCategoryState]
-  );
-
-  const draggedCategory = activeDragId != null ? categories.find((c) => c.category_id === activeDragId) : null;
-
   // ---- Header actions ------------------------------------------------------
   const headerActions = canManageCategory ? (
     <>
-      {selectionMode ? (
-        <button
-          onClick={exitSelection}
-          className="btn btn-ghost btn-sm font-bold rounded-xl cursor-pointer text-base-content/70"
-        >
-          <X className="h-4 w-4" />
-          <span className="hidden sm:inline">Cancel</span>
-        </button>
-      ) : (
-        <button
-          onClick={() => setSelectionMode(true)}
-          className="btn btn-outline btn-sm font-bold rounded-xl shadow-sm transition-all duration-200 cursor-pointer"
-        >
-          <Check className="h-4 w-4" />
-          <span className="hidden sm:inline">Select</span>
-        </button>
-      )}
       <button
         onClick={() => setShowAddForm((s) => !s)}
         className="btn btn-primary btn-sm font-bold rounded-xl shadow-sm transition-all duration-200 cursor-pointer text-primary-content"
@@ -484,90 +381,116 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
     if (!canManageCategory || selectionMode) return null;
     const color = cat.color || DEFAULT_COLOR;
     const isRenaming = renamingId === cat.category_id;
+    const menuOpen = openMenuId === cat.category_id;
     return (
       <div className="flex items-center gap-1 shrink-0">
         {cat.total_articles > 0 && (
           <span
-            className="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full select-none"
+            className="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full select-none shrink-0"
             style={{ backgroundColor: colorTint(color, 12), color }}
           >
             {cat.total_articles} articles
           </span>
         )}
-        {!isSearching && (
+        <div className="dropdown dropdown-end dropdown-bottom">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setAddSubParentId((cur) => (cur === cat.category_id ? null : cat.category_id));
+              setOpenMenuId((cur) => (cur === cat.category_id ? null : cat.category_id));
             }}
-            className="p-1.5 text-base-content/50 hover:text-primary hover:bg-base-200 rounded-lg transition-all duration-150 cursor-pointer"
-            title="Add sub-category inside this category"
+            className={`p-1.5 rounded-lg transition-all duration-150 cursor-pointer ${
+              menuOpen
+                ? "text-primary bg-primary/10"
+                : "text-base-content/50 hover:text-primary hover:bg-base-200"
+            }`}
+            title="More actions"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
           >
-            <PlusCircle className="h-3.5 w-3.5" />
+            <MoreVertical className="h-3.5 w-3.5" />
           </button>
-        )}
-        <button
-          onClick={async (e) => {
-            e.stopPropagation();
-            await togglePin(cat);
-          }}
-          disabled={pinningCategoryId === cat.category_id}
-          className={`p-1.5 rounded-lg transition-all duration-150 cursor-pointer disabled:cursor-not-allowed ${
-            cat.is_pinned
-              ? "text-primary bg-primary/10 hover:bg-primary/20"
-              : "text-base-content/50 hover:text-primary hover:bg-base-200"
-          }`}
-          title={cat.is_pinned ? "Unpin from Quick Portal" : "Pin to Quick Portal"}
-        >
-          {pinningCategoryId === cat.category_id ? (
-            <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-          ) : (
-            <Pin className={`h-3.5 w-3.5 ${cat.is_pinned ? "fill-current" : ""}`} />
+          {menuOpen && (
+            <ul
+              className="dropdown-content menu z-50 p-1 shadow-lg bg-base-100 rounded-xl border border-base-200 w-48 mt-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {!isSearching && (
+                <li>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId(null);
+                      setAddSubParentId((cur) =>
+                        cur === cat.category_id ? null : cat.category_id
+                      );
+                    }}
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Add sub-category
+                  </button>
+                </li>
+              )}
+              <li>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    setOpenMenuId(null);
+                    await togglePin(cat);
+                  }}
+                  disabled={pinningCategoryId === cat.category_id}
+                  className="disabled:cursor-not-allowed"
+                >
+                  {pinningCategoryId === cat.category_id ? (
+                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                  ) : (
+                    <Pin className={`h-4 w-4 ${cat.is_pinned ? "fill-current" : ""}`} />
+                  )}
+                  {cat.is_pinned ? "Unpin" : "Pin to Quick Portal"}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuId(null);
+                    startRename(cat);
+                  }}
+                >
+                  <SquarePen className="h-4 w-4" />
+                  Rename
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuId(null);
+                    setEditingCategory(cat);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit Category
+                </button>
+              </li>
+            </ul>
           )}
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            startRename(cat);
-          }}
-          className="p-1.5 text-base-content/50 hover:text-primary hover:bg-base-200 rounded-lg transition-all duration-150 cursor-pointer"
-          title="Rename"
-        >
-          <SquarePen className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setEditingCategory(cat);
-          }}
-          className="p-1.5 text-base-content/50 hover:text-primary hover:bg-base-200 rounded-lg transition-all duration-150 cursor-pointer"
-          title="Edit Category"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
+        </div>
       </div>
     );
   };
 
   // A category card. In browse mode, `childCats` renders the sub-category chips
   // inline; in search mode it is omitted and the parent label is shown instead.
-  // `opts.droppableRef` / `opts.isOver` wire the card up as a reparent target.
-  const renderCard = (
-    cat: Category,
-    childCats?: Category[],
-    opts?: { droppableRef?: (node: HTMLElement | null) => void; isOver?: boolean }
-  ) => {
+  const renderCard = (cat: Category, childCats?: Category[]) => {
     const color = cat.color || DEFAULT_COLOR;
     const parentName = cat.parent_id != null ? nameById.get(cat.parent_id) : undefined;
     const isPinned = cat.is_pinned;
     const inSelection = selectionMode;
     const selected = isSelected(cat.category_id);
     const isRenaming = renamingId === cat.category_id;
-    const isDropTarget = opts?.isOver;
 
     return (
       <div
-        ref={opts?.droppableRef}
         role="button"
         tabIndex={0}
         aria-pressed={inSelection ? selected : undefined}
@@ -586,14 +509,12 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
           }
         }}
         className={`group relative flex flex-col gap-3 p-4 md:p-5 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-          isDropTarget
-            ? "ring-2 ring-primary ring-offset-2 bg-primary/5"
-            : isPinned
+          isPinned
             ? "border-[color:var(--pin-border)] bg-[color:var(--pin-tint)]"
             : "bg-base-100 border-base-200 hover:border-primary"
         }`}
         style={
-          isPinned && !isDropTarget
+          isPinned
             ? ({ "--pin-tint": colorTint(color, 8), "--pin-border": colorTint(color, 30) } as CSSProperties)
             : undefined
         }
@@ -686,7 +607,6 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
                 key={child.slug}
                 child={child}
                 color={child.color || DEFAULT_COLOR}
-                draggable={dragEnabled}
                 selectionMode={selectionMode}
                 selected={isSelected(child.category_id)}
                 onOpen={openCategory}
@@ -713,8 +633,7 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
     </div>
   );
 
-  // Builds the browse-mode body (pinned strip + top-level grid) wrapped in a
-  // DndContext so sub-category chips can be reparented onto top-level cards.
+  // Builds the browse-mode body (pinned strip + top-level grid).
   const browseBody = (
     <div className="space-y-7">
       {/* Inline Create Sub-category panel */}
@@ -735,7 +654,7 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {pinnedCategories.map((cat) => (
-              <DroppableCard key={cat.slug} cat={cat} childCats={childrenByParent.get(cat.category_id)} dragEnabled={dragEnabled} render={renderCard} />
+              <DroppableCard key={cat.slug} cat={cat} childCats={childrenByParent.get(cat.category_id)} render={renderCard} />
             ))}
           </div>
         </section>
@@ -751,12 +670,12 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
           renderEmptyState(
             <FolderOpen className="h-7 w-7 text-base-content/40" />,
             "No top-level categories",
-            "Every category currently lives inside a parent. Unpin or re-parent one to browse it here."
+            "Every category currently lives inside a parent. Create a top-level category to browse it here."
           )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {topLevelBrowse.map((cat) => (
-              <DroppableCard key={cat.slug} cat={cat} childCats={childrenByParent.get(cat.category_id)} dragEnabled={dragEnabled} render={renderCard} />
+              <DroppableCard key={cat.slug} cat={cat} childCats={childrenByParent.get(cat.category_id)} render={renderCard} />
             ))}
           </div>
         )}
@@ -851,33 +770,7 @@ export default function CategoriesOverlay({ isOpen, onClose }: CategoriesOverlay
             {searchResults.map((cat) => renderCard(cat))}
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            {browseBody}
-            <DragOverlay>
-              {draggedCategory ? (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary bg-base-100 shadow-[0_8px_24px_rgba(0,0,0,0.18)] cursor-grabbing">
-                  <span
-                    className="w-5 h-5 shrink-0 rounded-md border flex items-center justify-center"
-                    style={{
-                      backgroundColor: colorTint(draggedCategory.color || DEFAULT_COLOR, 12),
-                      borderColor: colorTint(draggedCategory.color || DEFAULT_COLOR, 30),
-                      color: draggedCategory.color || DEFAULT_COLOR,
-                    }}
-                  >
-                    <CategoryIcon icon={draggedCategory.icon} size={12} />
-                  </span>
-                  <span className="text-xs font-semibold text-base-content">
-                    {draggedCategory.name}
-                  </span>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+          browseBody
         )}
 
         {/* Bulk pin / unpin toolbar (selection mode only) */}
