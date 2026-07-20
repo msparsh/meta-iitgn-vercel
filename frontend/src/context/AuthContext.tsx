@@ -21,6 +21,7 @@ export interface Category {
   is_pinned?: boolean;
   icon?: string;
   color?: string;
+  parent_id?: number | null;
   created_at: string;
   updated_at: string;
 }

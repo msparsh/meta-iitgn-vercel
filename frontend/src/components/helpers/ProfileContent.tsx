@@ -40,7 +40,7 @@ export default function ProfileContent() {
   const { user: currentUser, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { bookmarks, removeBookmark } = useHomeStore();
+  const { bookmarks, removeBookmark, setActiveOverlay } = useHomeStore();
   const { profileCache, setProfileData } = useProfile();
   const [isSavingReadme,setIsSavingReadme]=useState<boolean>(false);
   const [showDashboard, setShowDashboard] = useState(false);
@@ -544,12 +544,13 @@ export default function ProfileContent() {
                   <span>{profileStats?.articlesImproved || 0} edits</span>
                   <span>36 edits</span>
                 </div>
-                <Link
-                  href="/wiki/categories"
-                  className="btn btn-warning btn-sm mt-4 w-full rounded-xl text-warning-content"
+                <button
+                  type="button"
+                  onClick={() => setActiveOverlay("categories")}
+                  className="btn btn-warning btn-sm mt-4 w-full rounded-xl text-warning-content cursor-pointer"
                 >
                   <BookOpen className="h-4 w-4" /> Find an article
-                </Link>
+                </button>
               </section>
             </aside>
           </div>
@@ -637,12 +638,13 @@ export default function ProfileContent() {
                 {displayBookmarks.length} bookmarks
               </p>
             </div>
-            <Link
-              href="/wiki/categories"
-              className="btn btn-ghost btn-xs text-primary gap-1"
+            <button
+              type="button"
+              onClick={() => setActiveOverlay("categories")}
+              className="btn btn-ghost btn-xs text-primary gap-1 cursor-pointer"
             >
               Browse wiki <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            </button>
           </div>
 
           {displayBookmarks.length === 0 ? (

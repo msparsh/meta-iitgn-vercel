@@ -85,6 +85,8 @@ Write your content here...`;
   let updatedAt: string | undefined = undefined;
   let updatedByName: string | null = null;
   let contributors: any = undefined;
+  let dbPageIcon: string | undefined = undefined;
+  let dbPageColor: string | undefined = undefined;
 
   try {
     const dbArticle = await apiService.getPage(slug);
@@ -96,6 +98,8 @@ Write your content here...`;
       updatedAt = dbArticle.updated_at;
       updatedByName = dbArticle.updater?.name ?? null;
       contributors = dbArticle.contributors;
+      dbPageIcon = dbArticle.icon;
+      dbPageColor = dbArticle.color;
 
       // Count a view for genuine article reads (skip edit mode / non-DB pages).
       if (dbPageId && edit !== "true") {
@@ -133,6 +137,8 @@ Write your content here...`;
       updatedAt={updatedAt}
       updatedByName={updatedByName}
       contributors={contributors}
+      initialIcon={dbPageIcon}
+      initialColor={dbPageColor}
       defaultEditing={edit === "true"}
     />
   );

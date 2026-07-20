@@ -2,6 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useHomeStore } from "@/store/useHomeStore";
 import {
   Home,
   Shuffle,
@@ -25,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { SIDEBAR_SECTIONS } from "@/lib/constants";
+import { CategoryIcon } from "@/lib/categoryIcon";
 
 // Local map for statically imported icons to avoid wildcard imports
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -53,6 +55,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, categories } = useAuth();
+  const { setActiveOverlay, setActivePortalCategory, activeOverlay, activePortalCategory } = useHomeStore();
   const [showAllCategories, setShowAllCategories] = useState(false);
 
   // Helper to render Lucide icons dynamically from their string names
@@ -120,6 +123,32 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div className="space-y-0.5">
                 {section.items.map((item) => {
                   const isActive = pathname === item.path;
+                  // "All Categories" is now a modal, not a route — open the
+                  // categories overlay instead of navigating.
+                  const isCategoryBrowser = item.path === "/wiki/categories";
+
+                  const itemClass = `group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-base-content/75 hover:text-base-content hover:bg-base-200"
+                  }`;
+
+                  if (isCategoryBrowser) {
+                    return (
+                      <button
+                        key={item.name}
+                        type="button"
+                        onClick={() => {
+                          setActiveOverlay("categories");
+                          if (window.innerWidth < 1024) onClose();
+                        }}
+                        className={itemClass}
+                      >
+                        {renderIcon(item.iconName, isActive)}
+                        <span className="truncate">{item.name}</span>
+                      </button>
+                    );
+                  }
 
                   return (
                     <Link
@@ -131,11 +160,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                           onClose();
                         }
                       }}
-                      className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
-                        isActive
-                          ? "bg-primary/10 text-primary font-bold"
-                          : "text-base-content/75 hover:text-base-content hover:bg-base-200"
-                      }`}
+                      className={itemClass}
                     >
                       {renderIcon(item.iconName, isActive)}
                       <span className="truncate">{item.name}</span>
@@ -156,18 +181,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div className="space-y-0.5">
                 {(showAllCategories ? categories : categories.slice(0, 5)).map(
                   (category) => {
-                    const path = `/wiki/${category.slug}`;
-                    const isActive = pathname === path;
+                    const isActive =
+                      activeOverlay === "portal" && activePortalCategory === category.slug;
 
                     return (
-                      <Link
+                      <button
                         key={category.category_id}
-                        href={path}
+                        type="button"
                         onClick={() => {
-                          // Close sidebar on mobile after clicking a link
-                          if (window.innerWidth < 1024) {
-                            onClose();
-                          }
+                          // Open the category in the portal modal instead of
+                          // navigating to a (now-removed) category route.
+                          setActivePortalCategory(category.slug);
+                          setActiveOverlay("portal");
+                          if (window.innerWidth < 1024) onClose();
                         }}
                         className={`group flex items-center gap-3 px-3 py-2 text-[13px] font-semibold rounded-lg transition-all duration-200 ${
                           isActive
@@ -175,9 +201,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             : "text-base-content/75 hover:text-base-content hover:bg-base-200"
                         }`}
                       >
-                        {renderIcon(category.icon || "BookOpen", isActive)}
+                        <CategoryIcon
+                          icon={category.icon}
+                          size={20}
+                          className={`transition-colors duration-200 ${
+                            isActive
+                              ? "text-primary"
+                              : "text-base-content/50 group-hover:text-base-content/80"
+                          }`}
+                        />
                         <span className="truncate">{category.name}</span>
-                      </Link>
+                      </button>
                     );
                   }
                 )}

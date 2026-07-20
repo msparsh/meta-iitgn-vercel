@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { BookOpen, PlusCircle, Pencil, Sparkles, Building2, Users2, Trophy, Tent, MapPin, FlaskConical, Calendar, Shield, TrendingUp, GraduationCap } from "lucide-react";
+import { useHomeStore } from "@/store/useHomeStore";
+import { PlusCircle, Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { apiService } from "@/api";
 import CategoryEditModal from "@/components/overlays/CategoryEditModal";
+import CategoryCreateForm from "@/components/overlays/CategoryCreateForm";
+import CategoryIconPicker from "@/components/overlays/CategoryIconPicker";
+import { CategoryIcon } from "@/lib/categoryIcon";
 import { useViewMode } from "@/hooks/useViewMode";
 import ViewSwitcher from "@/components/helpers/ViewSwitcher";
 import { getGridClass, humanizeSlug } from "@/lib/viewModes";
@@ -16,26 +21,13 @@ export interface Article {
   title: string;
 }
 
-export const ICON_MAP: Record<string, any> = {
-  BookOpen,
-  Building2,
-  Users2,
-  Trophy,
-  Tent,
-  MapPin,
-  FlaskConical,
-  Sparkles,
-  Calendar,
-  Shield,
-  TrendingUp,
-  GraduationCap,
-};
-
 interface CategoryPageProps {
   categorySlug: string;
-  // When true, the page is rendered inside a modal (e.g. a Quick Portal) and
-  // its page-only chrome (edit/new buttons, nested edit modal, top nav margin)
-  // is suppressed.
+  // When true, the page is rendered inside a modal (e.g. a Quick Portal). Only
+  // the page-only layout chrome is suppressed (the top-nav margin and the
+  // page's own scroll container — the modal body already scrolls). All
+  // management features (add subcategory, edit, new article, icon picker) are
+  // kept so the overlay is a full-featured replacement for the route page.
   embedded?: boolean;
 }
 
@@ -58,8 +50,10 @@ const ArticleSkeleton = () => (
 );
 
 export default function CategoryPage({ categorySlug, embedded = false }: CategoryPageProps) {
-  const { user, categories } = useAuth();
+  const { user, categories, updateCategoryState } = useAuth();
+  const { setActivePortalCategory, setActiveOverlay } = useHomeStore();
   const category = categories?.find(c => c.slug === categorySlug);
+  const childCategories = (categories || []).filter(c => category && c.parent_id === category.category_id);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -74,6 +68,27 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
   // Edit Category modal state — the form itself lives in <CategoryEditModal />.
   const [isEditing, setIsEditing] = useState(false);
   const handleStartEdit = () => setIsEditing(true);
+
+  // Icon picker popover (admin/moderator only) — opened by clicking the
+  // category icon in the header; lets you set an icon+color or an emoji.
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const canManage = user?.role === "admin" || user?.role === "moderator";
+
+  const handleIconSave = async (icon: string, color: string) => {
+    if (!category) return;
+    try {
+      const updated = await apiService.updateCategory(category.category_id, { icon, color });
+      updateCategoryState(updated);
+      toast.success("Icon updated");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || "Failed to update icon");
+      throw err;
+    }
+  };
+
+  // "Add Subcategory" inline form state.
+  const [showAddSub, setShowAddSub] = useState(false);
 
   const loadCategoryArticles = async (pageNum = 1, append = false) => {
     try {
@@ -128,23 +143,45 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
   }
 
   return (
-    <main className={`flex-1 p-6 md:p-8 ${embedded ? "" : "mt-15"} bg-transparent overflow-y-auto ${loading ? "no-scrollbar" : ""}`}>
+    <main className={`flex-1 p-6 md:p-8 ${embedded ? "" : "mt-15"} bg-transparent ${embedded ? "" : "overflow-y-auto"} ${loading ? "no-scrollbar" : ""}`}>
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Category Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div className="space-y-3 flex-1">
-            <div
-              className="inline-flex items-center justify-center p-3 rounded-2xl shadow-sm"
-              style={{
-                backgroundColor: `${category.color || "#4f46e5"}1a`,
-                color: category.color || "#4f46e5",
-              }}
-            >
-              {(() => {
-                const IconComponent = ICON_MAP[category.icon || "BookOpen"] || BookOpen;
-                return <IconComponent className="h-6 w-6" />;
-              })()}
+            <div className="relative">
+              {canManage ? (
+                <button
+                  type="button"
+                  onClick={() => setIconPickerOpen((o) => !o)}
+                  className="inline-flex items-center justify-center p-3 rounded-2xl shadow-sm transition-transform duration-200 cursor-pointer hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: `${category.color || "#4f46e5"}1a`,
+                    color: category.color || "#4f46e5",
+                  }}
+                  title="Set icon"
+                >
+                  <CategoryIcon icon={category.icon} size={24} />
+                </button>
+              ) : (
+                <div
+                  className="inline-flex items-center justify-center p-3 rounded-2xl shadow-sm"
+                  style={{
+                    backgroundColor: `${category.color || "#4f46e5"}1a`,
+                    color: category.color || "#4f46e5",
+                  }}
+                >
+                  <CategoryIcon icon={category.icon} size={24} />
+                </div>
+              )}
+              {iconPickerOpen && canManage && (
+                <CategoryIconPicker
+                  currentIcon={category.icon || "BookOpen"}
+                  currentColor={category.color || "#4f46e5"}
+                  onSave={handleIconSave}
+                  onClose={() => setIconPickerOpen(false)}
+                />
+              )}
             </div>
             <h1 className="text-2xl md:text-3xl font-serif font-black text-base-content tracking-tight">
               {category.name}
@@ -155,7 +192,16 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
           </div>
 
           <div className="flex items-center gap-3 shrink-0 mb-1">
-            {!embedded && (user?.role === "admin" || user?.role === "moderator") && (
+            {(user?.role === "admin" || user?.role === "moderator") && (
+              <button
+                onClick={() => setShowAddSub((s) => !s)}
+                className="btn btn-outline btn-sm font-bold rounded-xl shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
+              >
+                <PlusCircle className="h-4.5 w-4.5" />
+                <span>Add Subcategory</span>
+              </button>
+            )}
+            {(user?.role === "admin" || user?.role === "moderator") && (
               <button
                 onClick={handleStartEdit}
                 className="btn btn-outline btn-sm font-bold rounded-xl shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
@@ -164,7 +210,7 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
                 <span>Edit Category</span>
               </button>
             )}
-            {!embedded && (user?.role === "admin" || user?.role === "moderator") && (
+            {(user?.role === "admin" || user?.role === "moderator") && (
               <Link
                 href={`/wiki/${categorySlug}/new`}
                 className="btn btn-primary btn-sm font-bold rounded-xl shadow-sm transition-all duration-200 cursor-pointer active:scale-95 text-primary-content"
@@ -175,6 +221,58 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
             )}
           </div>
         </div>
+
+        {/* Inline Add Subcategory form — opens as a panel, not a modal */}
+        {showAddSub && (user?.role === "admin" || user?.role === "moderator") && category && (
+          <CategoryCreateForm
+            defaultParentId={category.category_id}
+            parentName={category.name}
+            onCancel={() => setShowAddSub(false)}
+          />
+        )}
+
+        {/* Subcategories — child categories live "inside" their parent */}
+        {childCategories.length > 0 && (
+          <div>
+            <h2 className="text-lg font-serif font-bold text-base-content tracking-tight mb-4">
+              Subcategories
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {childCategories.map((child) => (
+                <button
+                  key={child.slug}
+                  type="button"
+                  onClick={() => {
+                    setActivePortalCategory(child.slug);
+                    setActiveOverlay("portal");
+                  }}
+                  className={`card card-compact card-border relative flex flex-col justify-between p-4 md:p-6 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 group bg-base-100 border border-base-200 hover:border-primary text-left w-full cursor-pointer`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 shadow-sm transition-all duration-300 group-hover:opacity-90"
+                        style={{
+                          backgroundColor: `${child.color || "#4f46e5"}1a`,
+                          borderColor: `${child.color || "#4f46e5"}33`,
+                          color: child.color || "#4f46e5",
+                        }}
+                      >
+                        <CategoryIcon icon={child.icon} size={16} />
+                      </div>
+                      <h3 className="text-sm md:text-base font-bold text-base-content font-serif group-hover:text-primary transition-colors duration-300 truncate">
+                        {child.name}
+                      </h3>
+                    </div>
+                    <p className="text-xs text-base-content/60 leading-relaxed line-clamp-4 md:pl-10.5">
+                      {child.description || "No description provided."}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Articles List / Grid (Horizontal Stack) */}
         <div>
@@ -249,7 +347,7 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
       </div>
 
       {/* Edit Category Modal */}
-      {isEditing && !embedded && category && (
+      {isEditing && category && (
         <CategoryEditModal category={category} onClose={() => setIsEditing(false)} />
       )}
     </main>

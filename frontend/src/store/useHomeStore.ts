@@ -17,8 +17,8 @@ export interface HomeState {
   upcomingEvents: any[];
   loading: boolean;
 
-  // Active overlay (new, updated, pending, news, trivia, history, featured-edit, portal, null)
-  activeOverlay: "new" | "updated" | "pending" | "news" | "trivia" | "history" | "featured-edit" | "portal" | null;
+  // Active overlay (new, updated, pending, news, trivia, history, featured-edit, portal, categories, null)
+  activeOverlay: "new" | "updated" | "pending" | "news" | "trivia" | "history" | "featured-edit" | "portal" | "categories" | null;
 
   // Slug of the category shown by the "portal" overlay (opened from Quick Portals)
   activePortalCategory: string | null;
@@ -63,7 +63,7 @@ export interface HomeState {
   setPopularPages: (pages: any[]) => void;
   setUpcomingEvents: (events: any[]) => void;
   setLoading: (loading: boolean) => void;
-  setActiveOverlay: (overlay: "new" | "updated" | "pending" | "news" | "trivia" | "history" | "featured-edit" | "portal" | null) => void;
+  setActiveOverlay: (overlay: "new" | "updated" | "pending" | "news" | "trivia" | "history" | "featured-edit" | "portal" | "categories" | null) => void;
   setActivePortalCategory: (slug: string | null) => void;
 
   setNewPageNumber: (num: number) => void;

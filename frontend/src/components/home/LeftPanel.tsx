@@ -5,26 +5,9 @@ import Link from "next/link";
 import { apiService } from "@/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeStore } from "@/store/useHomeStore";
-import {
-  Menu,
-  Heart,
-  HelpCircle,
-  Users2,
-  BookOpen,
-  Trophy,
-  Tent,
-  MapPin,
-  FlaskConical,
-  Sparkles,
-  Building2,
-  Calendar,
-  Shield,
-  TrendingUp,
-  LucideIcon,
-  Settings,
-  GraduationCap,
-} from "lucide-react";
+import { Menu, Heart, Settings } from "lucide-react";
 import Sidebar from "@/components/navs/Sidebar";
+import { CategoryIcon } from "@/lib/categoryIcon";
 import { BeautifulSearchBox } from "@/components/helpers/SearchDesign";
 
 interface LeftPanelProps {
@@ -39,21 +22,6 @@ interface LeftPanelProps {
   setActiveTab: (tab: "home" | "search" | "bookmarks" | "profile") => void;
   spawnHearts: (e: React.MouseEvent) => void;
 }
-
-const PORTAL_ICON_MAP: Record<string, LucideIcon> = {
-  Building2,
-  Users2,
-  BookOpen,
-  Trophy,
-  Tent,
-  MapPin,
-  FlaskConical,
-  Sparkles,
-  Calendar,
-  Shield,
-  TrendingUp,
-  GraduationCap,
-};
 
 export default function LeftPanel({
   sidebarOpen,
@@ -79,7 +47,7 @@ export default function LeftPanel({
       name: c.name,
       slug: c.slug,
       path: `/wiki/${c.slug}`,
-      iconName: c.icon || "BookOpen",
+      iconName: c.icon,
       color: c.color || "#4f46e5",
     }));
   }, [categories]);
@@ -99,12 +67,7 @@ export default function LeftPanel({
     loadStats();
   }, []);
 
-  const renderPortalIcon = (
-    iconName: string,
-    color: string
-  ) => {
-    const IconComponent = PORTAL_ICON_MAP[iconName] || HelpCircle;
-
+  const renderPortalIcon = (iconName: string | undefined, color: string) => {
     return (
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
@@ -113,7 +76,7 @@ export default function LeftPanel({
           color: color,
         }}
       >
-        <IconComponent className="h-5 w-5" />
+        <CategoryIcon icon={iconName} size={20} />
       </div>
     );
   };
@@ -197,12 +160,12 @@ export default function LeftPanel({
                 Quick Portals
               </h2>
               {isLoggedIn ? (
-                <Link
-                  href="/wiki/categories"
-                  className="text-[10px] font-extrabold text-primary hover:text-blue-700 hover:underline tracking-wider uppercase shrink-0"
+                <button
+                  onClick={() => setActiveOverlay("categories")}
+                  className="text-[10px] font-extrabold text-primary hover:text-blue-700 hover:underline tracking-wider uppercase shrink-0 cursor-pointer"
                 >
                   All
-                </Link>
+                </button>
               ) : (
                 <div className="w-12" />
               )}
@@ -229,12 +192,13 @@ export default function LeftPanel({
             {portalsToDisplay.length === 0 && (
               <div className="text-center py-6 border border-dashed border-base-300 rounded-xl bg-base-200/50">
                 <p className="text-xs text-base-content/50 font-semibold mb-2">No Quick Portals pinned</p>
-                <Link
-                  href="/wiki/categories"
-                  className="inline-flex text-[10px] font-extrabold text-primary hover:text-blue-700 uppercase tracking-wider hover:underline"
+                <button
+                  type="button"
+                  onClick={() => setActiveOverlay("categories")}
+                  className="inline-flex text-[10px] font-extrabold text-primary hover:text-blue-700 uppercase tracking-wider hover:underline cursor-pointer"
                 >
                   Pin Portals
-                </Link>
+                </button>
               </div>
             )}
           </div>

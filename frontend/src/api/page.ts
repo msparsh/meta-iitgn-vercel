@@ -68,7 +68,7 @@ export const createPage = async (data: { title: string; content?: string; metada
   return response.data;
 };
 
-export const updatePage = async (slug: string, data: { title?: string; content?: string; metadata?: any; video_url?: string; edit_summary?: string }) => {
+export const updatePage = async (slug: string, data: { title?: string; content?: string; metadata?: any; video_url?: string; edit_summary?: string; icon?: string; color?: string }) => {
   const response = await api.patch(`/pages/${slug}`, data, { withCredentials: true });
   return response.data;
 };
