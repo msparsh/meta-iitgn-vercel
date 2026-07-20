@@ -38,6 +38,7 @@
     "daisyui": "^5.6.18",
     "dexie": "^4.4.4",
     "dompurify": "^3.4.12",
+    "frimousse": "^0.3.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^1.23.0",
     "marked": "^18.0.6",
@@ -61,6 +62,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.20",
+    "knip": "^6.27.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
