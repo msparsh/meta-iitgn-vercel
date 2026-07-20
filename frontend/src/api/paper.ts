@@ -1,9 +1,8 @@
 import axios from "axios";
 import toast from "react-hot-toast";
-import React from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { api } from "@/lib/api";
-
-
+import type { Paper } from "@/lib/types";
 
 interface GetPapersParams {
   search?: string;
@@ -13,8 +12,27 @@ interface GetPapersParams {
   limit?: number;
 }
 
-export async function getPapers(params: GetPapersParams) {
-  const response = await api.get("/paper", {
+interface PapersResponse {
+  success: boolean;
+  data: {
+    papers: Paper[];
+    total: number;
+    totalPages: number;
+    page: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+interface DownloadResponse {
+  success: boolean;
+  data: {
+    downloads: number;
+  };
+}
+
+export async function getPapers(params: GetPapersParams): Promise<PapersResponse> {
+  const response = await api.get<PapersResponse>("/paper", {
     params: {
       ...params,
       sortby: "createdAt",
@@ -25,14 +43,14 @@ export async function getPapers(params: GetPapersParams) {
   return response.data;
 }
 
-export async function downloadPaper(paperId: string) {
-  const response = await api.patch(`/paper/${paperId}/download`);
+export async function downloadPaper(paperId: number): Promise<DownloadResponse> {
+  const response = await api.patch<DownloadResponse>(`/paper/${paperId}/download`);
   return response.data;
 }
 
-export async function uploudPaper(
+export async function uploadPaper(
   formData: FormData,
-  setUploading: React.Dispatch<React.SetStateAction<boolean>>
+  setUploading: Dispatch<SetStateAction<boolean>>
 ) {
   try {
     const response = await api.post("/paper", formData, {
@@ -41,14 +59,14 @@ export async function uploudPaper(
       },
     });
     if (response.data.success) {
-      toast.success(response.data.message);
+      toast.success("Paper uploaded successfully!");
     }
   } catch (err: unknown) {
     console.error(err);
 
     if (axios.isAxiosError(err)) {
       const message =
-        err.response?.data?.message || "Something went wrong while uploading.";
+        err.response?.data?.error?.message ?? "Something went wrong while uploading.";
       toast.error(message);
     } else {
       toast.error("Unexpected error occurred.");

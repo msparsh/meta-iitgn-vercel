@@ -54,7 +54,7 @@ const Upload = () => {
     formData.append("examType", data.examType);
     formData.append("paper", data.paper[0]);
 
-    await apiService.uploudPaper(formData,setUploading)
+    await apiService.uploadPaper(formData, setUploading);
   };
 
   return (

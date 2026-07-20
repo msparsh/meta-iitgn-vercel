@@ -22,20 +22,26 @@ export interface InfoboxData {
   rows: InfoboxRow[];
 }
 
+// Matches the actual snake_case fields returned by the backend Prisma model
 interface Paper {
-  _id: string;
-  courseName: string;
-  courseCode: string;
+  paper_id: number;
+  course_name: string;
+  course_code: string;
   department: string;
   semester: number;
   year: number;
-  examType: string;
+  exam_type: string;
   downloads: number;
-  pdfUrl: string;
-  fileName: string;
-  fileSize?: string;
-  uploadedByName: string;
+  pdf_url: string;
+  file_name: string;
+  file_size?: string;
+  uploaded_by_name: string;
+  owner_id: number;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
 }
+
 interface UploadFormData {
   courseCode: string;
   courseName: string;
@@ -65,7 +71,7 @@ const examTypes = [
   "Quiz-2",
   "Midsem",
   "Endsem",
-  "Assigment-1",
-  "Assigment-2",
+  "Assignment-1",
+  "Assignment-2",
 ];
 export { departments, years, semesters, examTypes };

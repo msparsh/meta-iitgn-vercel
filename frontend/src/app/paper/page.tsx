@@ -24,7 +24,7 @@ const Home = () => {
     setLoading(true);
 
     try {
-      const data = await apiService.getPapers({
+      const response = await apiService.getPapers({
         search,
         department,
         year,
@@ -32,10 +32,10 @@ const Home = () => {
         limit,
       });
 
-      if (data.success) {
-        setPapers(data.papers);
-        setTotalPages(data.totalPages);
-        setTotalPapers(data.total);
+      if (response.success) {
+        setPapers(response.data.papers);
+        setTotalPages(response.data.totalPages);
+        setTotalPapers(response.data.total);
       }
     } catch (err) {
       console.error(err);
@@ -60,15 +60,15 @@ const Home = () => {
     }, 10);
   }, [page]);
 
-  const handleDownload = async (paperId: string, pdfUrl: string) => {
+  const handleDownload = async (paperId: number, pdfUrl: string) => {
     try {
-      const data = await apiService.downloadPaper(paperId);
+      const response = await apiService.downloadPaper(paperId);
 
-      if (data.success) {
+      if (response.success) {
         setPapers((prevPapers) =>
           prevPapers.map((paper) =>
-            paper._id === paperId
-              ? { ...paper, downloads: data.downloads }
+            paper.paper_id === paperId
+              ? { ...paper, downloads: response.data.downloads }
               : paper
           )
         );
@@ -188,88 +188,90 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {papers.map((paper) => (
                 <div
-                  key={paper._id}
-                  className="rounded border border-[#1e293b] bg-[#0f172a] p-4 flex flex-col justify-between hover:border-[#334155] transition-colors"
+                  key={paper.paper_id}
+                  className="card bg-base-100 border border-base-300 hover:border-primary transition-colors"
                 >
-                  <div>
+                  <div className="card-body p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] uppercase font-bold tracking-wide text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">
-                        {paper.examType}
+                      <span className="badge badge-info badge-sm uppercase font-bold tracking-wide">
+                        {paper.exam_type}
                       </span>
-                      <span className="text-[10px] font-semibold text-slate-400">
+                      <span className="text-[10px] font-semibold text-base-content/60">
                         {paper.year}
                       </span>
                     </div>
 
-                    <div className="font-mono text-xs font-bold text-slate-300">
-                      {paper.courseCode}
+                    <div className="font-mono text-xs font-bold text-base-content/70">
+                      {paper.course_code}
                     </div>
-                    <h3 className="text-sm font-semibold text-white leading-tight mt-1 mb-3 truncate">
-                      {paper.courseName}
+                    <h3 className="card-title text-sm leading-tight mt-1 mb-3 truncate">
+                      {paper.course_name}
                     </h3>
 
-                    <div className="border-t border-[#1e293b] pt-2.5 mb-4 text-[11px] text-slate-400 space-y-1">
+                    <div className="border-t border-base-300 pt-2.5 mb-4 text-[11px] text-base-content/60 space-y-1">
                       <div className="flex justify-between">
                         <span>Dept:</span>
-                        <span className="text-slate-200 font-semibold">
+                        <span className="text-base-content font-semibold">
                           {paper.department}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Semester:</span>
-                        <span className="text-slate-200 font-semibold">
+                        <span className="text-base-content font-semibold">
                           {paper.semester}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Downloads:</span>
-                        <span className="text-slate-200 font-semibold font-mono">
+                        <span className="text-base-content font-semibold font-mono">
                           {paper.downloads}
                         </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <button
-                      onClick={() => handlePreview(paper.pdfUrl)}
-                      className="bg-[#1e293b] hover:bg-[#334155] text-slate-200 border border-[#334155] py-1.5 rounded transition cursor-pointer text-center font-medium"
-                    >
-                      Preview
-                    </button>
-                    <button
-                      onClick={() => handleDownload(paper._id, paper.pdfUrl)}
-                      className="bg-blue-600 hover:bg-blue-500 text-white py-1.5 rounded transition cursor-pointer text-center font-semibold"
-                    >
-                      Download
-                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handlePreview(paper.pdf_url)}
+                        className="btn btn-sm btn-outline"
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDownload(paper.paper_id, paper.pdf_url)
+                        }
+                        className="btn btn-sm btn-primary"
+                      >
+                        Download
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-[#1e293b] pt-4 text-xs">
-                <p className="text-slate-400">
+              <div className="flex items-center justify-between border-t border-base-300 pt-4 text-xs">
+                <p className="text-base-content/60">
                   Showing{" "}
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-base-content">
                     {(page - 1) * limit + 1}
                   </span>{" "}
                   to{" "}
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-base-content">
                     {Math.min(page * limit, totalPapers)}
                   </span>{" "}
                   of{" "}
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-base-content">
                     {totalPapers}
                   </span>{" "}
                   results
                 </p>
-                <div className="flex space-x-2">
+                <div className="join">
                   <button
                     onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                     disabled={page === 1}
-                    className="rounded border border-[#334155] bg-[#0f172a] hover:bg-slate-800 px-3 py-1.5 text-slate-300 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="join-item btn btn-sm"
                   >
                     Previous
                   </button>
@@ -278,7 +280,7 @@ const Home = () => {
                       setPage((prev) => Math.min(prev + 1, totalPages))
                     }
                     disabled={page === totalPages}
-                    className="rounded border border-[#334155] bg-[#0f172a] hover:bg-slate-800 px-3 py-1.5 text-slate-300 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    className="join-item btn btn-sm"
                   >
                     Next
                   </button>

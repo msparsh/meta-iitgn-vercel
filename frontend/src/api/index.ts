@@ -30,3 +30,4 @@ export * from "./bookmarks";
 export * from "./blog";
 export * from "./collegeinfo";
 export * from "./featured";
+export * from "./paper";
