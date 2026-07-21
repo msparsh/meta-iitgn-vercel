@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Navbar from "@/components/navs/Navbar";
 import Sidebar from "@/components/navs/Sidebar";
 
-export default function CalenderLayout({ children }: { children: React.ReactNode }) {
+export default function InterviewLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (

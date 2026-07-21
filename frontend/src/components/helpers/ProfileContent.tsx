@@ -28,6 +28,8 @@ import {
   Settings,
   PlusCircle,
   Calendar,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import Avatar from "@/components/helpers/Avatar";
 import UnifiedViewItem from "@/components/helpers/UnifiedViewItem";
@@ -41,6 +43,10 @@ import { useHomeStore } from "@/store/useHomeStore";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/context/ProfileContext";
 import AdminDashboardOverlay from "@/components/overlays/AdminDashboardOverlay";
+import ConfirmationModal from "@/components/overlays/ConfirmationModal";
+import type { Paper } from "@/lib/types";
+import InterviewPostCard from "@/components/interviews/InterviewPostCard";
+import type { InterviewPost } from "@/api/interviews";
 
 const formatBlogDate = (dateString: string) => {
   try {
@@ -117,7 +123,7 @@ export default function ProfileContent() {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "bookmarks" | "blogs"
+    "overview" | "bookmarks" | "blogs" | "interviews" | "papers"
   >("overview");
   const [targetBookmarks, setTargetBookmarks] = useState<any[]>([]);
 
@@ -126,6 +132,18 @@ export default function ProfileContent() {
   const [blogsLoading, setBlogsLoading] = useState(false);
   const [blogsLoaded, setBlogsLoaded] = useState(false);
   const [blogView, setBlogView] = useViewMode("meta_iitgn_profile_blogs_view");
+
+  // Papers tab state (lazy-loaded when the tab is opened)
+  const [userPapers, setUserPapers] = useState<Paper[]>([]);
+  const [papersLoading, setPapersLoading] = useState(false);
+  const [papersLoaded, setPapersLoaded] = useState(false);
+  const [deletingPaperId, setDeletingPaperId] = useState<number | null>(null);
+  const [paperToDelete, setPaperToDelete] = useState<Paper | null>(null);
+
+  // Interviews tab state (lazy-loaded when opened)
+  const [userInterviews, setUserInterviews] = useState<InterviewPost[]>([]);
+  const [interviewsLoading, setInterviewsLoading] = useState(false);
+  const [interviewsLoaded, setInterviewsLoaded] = useState(false);
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -295,6 +313,83 @@ export default function ProfileContent() {
     }
   }, [activeTab, targetUserId, blogsLoaded, blogsLoading]);
 
+  // Lazy-load uploaded papers when the Papers tab is first opened
+  const loadUserPapers = async () => {
+    if (!targetUserId) return;
+    setPapersLoading(true);
+    try {
+      const res = await apiService.getUserPapers();
+      if (res && res.success) {
+        setUserPapers(res.data.papers || []);
+      }
+    } catch (err) {
+      console.error("Error loading user papers:", err);
+    } finally {
+      setPapersLoading(false);
+      setPapersLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      activeTab === "papers" &&
+      !papersLoaded &&
+      !papersLoading &&
+      targetUserId
+    ) {
+      loadUserPapers();
+    }
+  }, [activeTab, targetUserId, papersLoaded, papersLoading]);
+
+  // Lazy-load interview posts when tab opened
+  const loadUserInterviews = async () => {
+    if (!targetUserId) return;
+    setInterviewsLoading(true);
+    try {
+      const res = isOwnProfile
+        ? await apiService.getMyInterviews()
+        : await apiService.getInterviews({ limit: 50 });
+      if (res && res.success) {
+        setUserInterviews(res.posts || []);
+      }
+    } catch (err) {
+      console.error("Error loading user interview posts:", err);
+    } finally {
+      setInterviewsLoading(false);
+      setInterviewsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      activeTab === "interviews" &&
+      !interviewsLoaded &&
+      !interviewsLoading &&
+      targetUserId
+    ) {
+      loadUserInterviews();
+    }
+  }, [activeTab, targetUserId, interviewsLoaded, interviewsLoading]);
+
+  const handleDeletePaper = async (paperId: number) => {
+    try {
+      setDeletingPaperId(paperId);
+      const res = await apiService.deletePaper(paperId);
+      if (res && res.success) {
+        setUserPapers((prev) => prev.filter((p) => p.paper_id !== paperId));
+        toast.success("Paper deleted successfully!");
+      }
+    } catch (err: any) {
+      console.error("Error deleting paper:", err);
+      toast.error(
+        err.response?.data?.error?.message || "Failed to delete paper."
+      );
+    } finally {
+      setDeletingPaperId(null);
+      setPaperToDelete(null);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="mx-auto max-w-4xl space-y-6 animate-pulse">
@@ -448,20 +543,30 @@ export default function ProfileContent() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex border-t border-base-200 px-5 sm:px-8">
-          {["overview", "bookmarks", "blogs"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-4 py-3 text-xs font-bold tracking-wider border-b-2 transition-colors cursor-pointer capitalize ${
-                activeTab === tab
-                  ? "border-primary text-primary"
-                  : "border-transparent text-base-content/50 hover:text-base-content"
-              }`}
-            >
-              {tab === "bookmarks" ? `Bookmarks (${displayBookmarks.length})` : tab}
-            </button>
-          ))}
+        <div className="flex border-t border-base-200 px-5 sm:px-8 overflow-x-auto">
+          {["overview", "bookmarks", "blogs", "interviews", isOwnProfile ? "papers" : null]
+            .filter(Boolean)
+            .map((tab) => (
+              <button
+                key={tab as string}
+                onClick={() => setActiveTab(tab as any)}
+                className={`px-4 py-3 text-xs font-bold tracking-wider border-b-2 transition-colors cursor-pointer capitalize whitespace-nowrap ${
+                  activeTab === tab
+                    ? "border-primary text-primary"
+                    : "border-transparent text-base-content/50 hover:text-base-content"
+                }`}
+              >
+                {tab === "bookmarks"
+                  ? `Bookmarks (${displayBookmarks.length})`
+                  : tab === "blogs"
+                  ? "Blogs"
+                  : tab === "interviews"
+                  ? `Interview Feed ${interviewsLoaded ? `(${userInterviews.length})` : ""}`
+                  : tab === "papers"
+                  ? `Uploaded Papers ${papersLoaded ? `(${userPapers.length})` : ""}`
+                  : tab}
+              </button>
+            ))}
         </div>
       </section>
 
@@ -748,6 +853,43 @@ export default function ProfileContent() {
         </section>
       )}
 
+      {activeTab === "interviews" && (
+        <section className="rounded-3xl border border-base-200 bg-base-100 p-5 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-base font-black text-base-content">
+                Interview Feed Experiences
+              </h2>
+              <p className="mt-0.5 text-xs text-base-content/55">
+                {interviewsLoaded
+                  ? `${userInterviews.length} posts`
+                  : "Interview experiences submitted by this user"}
+              </p>
+            </div>
+          </div>
+
+          {interviewsLoading ? (
+            <div className="space-y-4">
+              <div className="h-32 bg-base-300 animate-pulse rounded-2xl" />
+              <div className="h-32 bg-base-300 animate-pulse rounded-2xl" />
+            </div>
+          ) : userInterviews.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-base-300 rounded-2xl">
+              <MessageSquare className="h-10 w-10 mx-auto text-base-content/30 mb-3" />
+              <p className="text-sm font-bold text-base-content/60">
+                No interview posts submitted yet
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {userInterviews.map((post) => (
+                <InterviewPostCard key={post.post_id} post={post} onPostUpdated={loadUserInterviews} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {activeTab === "blogs" && (
         <section className="rounded-3xl border border-base-200 bg-base-100 p-5 shadow-sm sm:p-6">
           <div className="flex items-center justify-between gap-3 mb-5">
@@ -873,6 +1015,111 @@ export default function ProfileContent() {
           )}
         </section>
       )}
+
+      {activeTab === "papers" && (
+        <section className="rounded-3xl border border-base-200 bg-base-100 p-5 shadow-sm sm:p-6">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-base font-black text-base-content">
+                Uploaded Papers
+              </h2>
+              <p className="mt-0.5 text-xs text-base-content/55">
+                {papersLoaded
+                  ? `${userPapers.length} uploaded ${userPapers.length === 1 ? "paper" : "papers"}`
+                  : "Question papers uploaded by you"}
+              </p>
+            </div>
+            <Link
+              href="/paper/upload"
+              className="btn btn-primary btn-sm font-bold rounded-xl shadow-md transition-all duration-200 cursor-pointer text-primary-content shrink-0"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Upload Paper
+            </Link>
+          </div>
+
+          {papersLoading ? (
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-28 bg-base-300 animate-pulse rounded-2xl"
+                />
+              ))}
+            </div>
+          ) : userPapers.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-base-300 rounded-2xl">
+              <FileText className="h-10 w-10 mx-auto text-base-content/30 mb-3" />
+              <p className="text-sm font-bold text-base-content/60">
+                No papers uploaded yet
+              </p>
+              <p className="text-xs text-base-content/40 mt-1">
+                Upload previous semester exam papers to help your peers.
+              </p>
+              <Link
+                href="/paper/upload"
+                className="btn btn-primary btn-sm mt-4 rounded-xl text-primary-content cursor-pointer"
+              >
+                <PlusCircle className="h-4 w-4" /> Upload a Paper
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+              {userPapers.map((paper) => (
+                <div
+                  key={paper.paper_id}
+                  className="flex flex-col justify-between p-4 rounded-2xl border border-base-200 hover:border-primary/30 hover:shadow-sm transition-all group bg-base-100"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary">
+                          {paper.course_code}
+                        </span>
+                        <span className="badge badge-sm badge-ghost font-semibold">
+                          {paper.exam_type}
+                        </span>
+                        <span className="badge badge-sm badge-outline font-semibold">
+                          {paper.year}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-base-content mt-1.5 line-clamp-1">
+                        {paper.course_name}
+                      </h4>
+                      <p className="text-[11px] text-base-content/50 mt-0.5">
+                        Sem {paper.semester} • {paper.department}
+                      </p>
+                    </div>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => setPaperToDelete(paper)}
+                        className="btn btn-ghost btn-xs text-base-content/40 hover:text-error transition-colors shrink-0 p-1"
+                        title="Delete paper"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-base-200/60 mt-2 text-xs text-base-content/60">
+                    <span className="text-[11px] text-base-content/50 font-mono truncate max-w-[160px]">
+                      {paper.file_size || paper.file_name} • {paper.downloads} downloads
+                    </span>
+                    <a
+                      href={paper.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-xs btn-outline btn-primary rounded-lg gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" /> View PDF
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
       {/* Edit Profile README Overlay Modal */}
       {isEditingReadme && (
         <GenericOverlayModal
@@ -920,6 +1167,18 @@ export default function ProfileContent() {
           </div>
         </GenericOverlayModal>
       )}
+      {/* Confirmation Modal for deleting paper */}
+      <ConfirmationModal
+        isOpen={!!paperToDelete}
+        onClose={() => setPaperToDelete(null)}
+        onConfirm={() => paperToDelete && handleDeletePaper(paperToDelete.paper_id)}
+        title="Delete Paper"
+        message={`Are you sure you want to delete "${paperToDelete?.course_code} - ${paperToDelete?.exam_type} (${paperToDelete?.year})"? This action cannot be undone.`}
+        confirmText={deletingPaperId ? "Deleting..." : "Delete Paper"}
+        cancelText="Cancel"
+        type="danger"
+      />
+
       {showDashboard && (
         <AdminDashboardOverlay setShowDashboard={setShowDashboard} />
       )}

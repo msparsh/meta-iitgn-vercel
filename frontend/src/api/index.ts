@@ -8,6 +8,9 @@ import * as blogApi from "./blog";
 import * as collegeinfoApi from "./collegeinfo";
 import * as featuredApi from "./featured";
 import * as paperApi from "./paper";
+import * as competitionApi from "./competition";
+import * as interviewApi from "./interviews";
+
 export const apiService = {
   ...userApi,
   ...pageApi,
@@ -19,6 +22,8 @@ export const apiService = {
   ...collegeinfoApi,
   ...featuredApi,
   ...paperApi,
+  ...competitionApi,
+  ...interviewApi,
 };
 
 export * from "./user";
@@ -31,3 +36,6 @@ export * from "./blog";
 export * from "./collegeinfo";
 export * from "./featured";
 export * from "./paper";
+export * from "./competition";
+export * from "./interviews";
+
