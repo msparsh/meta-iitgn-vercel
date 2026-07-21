@@ -8,13 +8,14 @@ import {
   Eye,
   Search,
   ExternalLink,
-  RefreshCw,
   ChevronRight,
   Loader2,
   AlertCircle,
   GitBranch,
   Filter,
   X,
+  Folder,
+  Type,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -411,8 +412,8 @@ export default function GitHubExplorer() {
               {/* Level */}
               <div className="form-control w-full sm:w-48">
                 <label className="label py-1">
-                  <span className="label-text text-[11px] font-semibold uppercase tracking-widest text-base-content/50">
-                    Level
+                  <span className="label-text text-[11px] font-semibold uppercase tracking-widest text-base-content/50 flex">
+                    <Folder className="h-3.5 w-3.5 mr-2"/> Level
                   </span>
                 </label>
                 <select
@@ -427,13 +428,12 @@ export default function GitHubExplorer() {
                     <option key={l.id} value={l.id}>{l.label}</option>
                   ))}
                 </select>
-              </div>
-
+              </div>              
               {/* Category */}
               <div className="form-control w-full sm:w-60">
                 <label className="label py-1">
-                  <span className="label-text text-[11px] font-semibold uppercase tracking-widest text-base-content/50">
-                    Category
+                  <span className="label-text text-[11px] font-semibold uppercase tracking-widest text-base-content/50 flex">
+                    <Type className="h-3.5 w-3.5 mr-2"/> Category
                   </span>
                 </label>
                 <select

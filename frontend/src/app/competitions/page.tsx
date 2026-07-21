@@ -132,7 +132,7 @@ export default function CompetitionsPage() {
 
 
       {/* ── Scrollable content area (scroll listener attached here) ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto mt-10">
         <div className="max-w-7xl mx-auto px-4 py-5 pb-32 lg:pb-8">
           {/* Desktop: extra top padding to clear the floating pill nav */}
           <div className="hidden lg:block h-8" />
