@@ -1,32 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  defaultDropAnimationSideEffects,
-  DropAnimation,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  rectSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import React, { useState, useEffect } from "react";
+import { Responsive as ResponsiveGridLayout, Layout, useContainerWidth } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import { GripVertical } from "lucide-react";
 
 export interface MasonryCardConfig {
   id: string;
-  /** Number of grid columns this card spans (mock: featured/pending/quickstats = 2). */
   colSpan?: number;
-  /** Number of grid rows this card spans (mock: featured/popular/new = 2). */
   rowSpan?: number;
   content: React.ReactNode;
 }
@@ -34,239 +16,139 @@ export interface MasonryCardConfig {
 interface HomeMasonryGridProps {
   cards: MasonryCardConfig[];
   storageKey?: string;
-  // When true, drag handles are shown on every card and reordering is enabled.
-  // When false, cards are not draggable (e.g. customize panel is closed).
   reorderEnabled?: boolean;
 }
 
-function loadOrder(key: string): string[] | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveOrder(key: string, order: string[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(order));
-  } catch {
-    /* ignore */
-  }
-}
-
-function applyOrder(cards: MasonryCardConfig[], order: string[]): MasonryCardConfig[] {
-  const map = new Map(cards.map((c) => [c.id, c]));
-  const sorted: MasonryCardConfig[] = [];
-  for (const id of order) {
-    if (map.has(id)) {
-      sorted.push(map.get(id)!);
-      map.delete(id);
-    }
-  }
-  for (const remaining of map.values()) sorted.push(remaining);
-  return sorted;
-}
-
-function useContainerCols(ref: React.RefObject<HTMLDivElement | null>): number {
-  const [cols, setCols] = useState(4);
-  useEffect(() => {
-    if (!ref.current) return;
-    const observer = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width ?? 0;
-      if (width < 768) setCols(1);
-      else if (width < 1024) setCols(2);
-      else setCols(4);
-    });
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [ref]);
-  return cols;
-}
-
-interface SortableCardItemProps {
-  card: MasonryCardConfig;
-  isDraggingOver: boolean;
-  reorderEnabled: boolean;
-  cols: number;
-}
-
-function SortableCardItem({ card, isDraggingOver, reorderEnabled, cols }: SortableCardItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: card.id, disabled: !reorderEnabled });
-
-  const colSpan = Math.min(card.colSpan ?? 1, cols);
-  const rowSpan = card.rowSpan ?? 1;
-
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-    gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,
-    gridRow: rowSpan > 1 ? `span ${rowSpan}` : undefined,
-    minHeight: 0,
-    zIndex: isDragging ? 1 : undefined,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`relative group/card rounded-[2rem] focus:outline-none ${
-        isDragging ? "ring-2 ring-primary/30 ring-offset-2 ring-offset-base-100" : ""
-      } ${isDraggingOver ? "scale-[0.98]" : ""} transition-transform duration-150`}
-    >
-      {reorderEnabled && (
-        <button
-          {...attributes}
-          {...listeners}
-          tabIndex={0}
-          aria-label="Drag to reorder"
-          className="absolute top-3 right-3 z-30 p-1.5 rounded-lg bg-white border border-gray-200 shadow-sm text-gray-900 hover:bg-gray-100 cursor-grab active:cursor-grabbing transition-opacity duration-150"
-        >
-          <GripVertical className="w-3.5 h-3.5" />
-        </button>
-      )}
-      <div className="h-full">{card.content}</div>
-    </div>
-  );
-}
-
-const dropAnimation: DropAnimation = {
-  sideEffects: defaultDropAnimationSideEffects({
-    styles: { active: { opacity: "0.35" } },
-  }),
-};
-
-const DEFAULT_STORAGE_KEY = "meta_iitgn_home_card_order";
+const DEFAULT_STORAGE_KEY = "meta_iitgn_home_card_order_v2";
 
 export default function HomeMasonryGrid({
   cards,
   storageKey = DEFAULT_STORAGE_KEY,
   reorderEnabled = false,
 }: HomeMasonryGridProps) {
-  const [items, setItems] = useState<MasonryCardConfig[]>(cards);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const cols = useContainerCols(gridRef);
-  const [colWidth, setColWidth] = useState(0);
-
-  // Stable key of the current card id set. Re-syncs the displayed order when the
-  // set of cards changes (e.g. cards are filtered out via preferences) without
-  // clobbering an in-progress drag, which doesn't change the id set.
-  const cardsKey = cards.map((c) => c.id).join(",");
+  const { width, containerRef, mounted } = useContainerWidth();
+  const [layouts, setLayouts] = useState<ReactGridLayout.Layouts | null>(null);
+  const [activeBreakpoint, setActiveBreakpoint] = useState<string>("lg");
 
   useEffect(() => {
-    const el = gridRef.current;
-    if (!el) return;
-    const measure = () => {
-      const width = el.getBoundingClientRect().width;
-      const gap = cols === 4 ? 24 : 16;
-      const computedWidth = (width - gap * (cols - 1)) / cols;
-      setColWidth(computedWidth);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [cols]);
-
-  useEffect(() => {
-    const saved = loadOrder(storageKey);
-    if (saved && saved.length > 0) {
-      setItems(applyOrder(cards, saved));
-    } else {
-      setItems(cards);
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        
+        // Enforce new max boundaries on saved layouts
+        const enforceMax = (layoutArray: Layout[]) => layoutArray.map(item => ({ ...item, maxW: 4, maxH: 4 }));
+        
+        if (Array.isArray(parsed)) {
+          setLayouts({ lg: enforceMax(parsed) });
+        } else {
+          const enforcedParsed: ReactGridLayout.Layouts = {};
+          Object.keys(parsed).forEach(key => {
+            enforcedParsed[key] = enforceMax(parsed[key]);
+          });
+          setLayouts(enforcedParsed);
+        }
+      } else {
+        // Generate default layout if nothing is saved
+        const defaultLg = cards.map((card, index) => ({
+          i: card.id,
+          x: (index * 2) % 4,
+          y: index,
+          w: card.colSpan ?? 2,
+          h: card.rowSpan ?? 1,
+          minW: 1,
+          maxW: 4,
+          minH: 1,
+          maxH: 2,
+        }));
+        setLayouts({ lg: defaultLg });
+      }
+    } catch (e) {
+      console.error("Failed to load portal layout:", e);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey, cardsKey]);
+  }, [storageKey]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    })
-  );
+  const handleLayoutChange = (currentLayout: Layout[], allLayouts: ReactGridLayout.Layouts) => {
+    let layoutsToSave = { ...allLayouts };
+    
+    // To ensure changes on larger screens dynamically cascade to smaller screens,
+    // we delete the cached layouts of smaller screens whenever a larger screen is edited.
+    if (activeBreakpoint === "lg") {
+      layoutsToSave = { lg: allLayouts.lg };
+    } else if (activeBreakpoint === "md") {
+      layoutsToSave = { lg: allLayouts.lg, md: allLayouts.md };
+    } else if (activeBreakpoint === "sm") {
+      layoutsToSave = { lg: allLayouts.lg, md: allLayouts.md, sm: allLayouts.sm };
+    } else if (activeBreakpoint === "xs") {
+      layoutsToSave = { lg: allLayouts.lg, md: allLayouts.md, sm: allLayouts.sm, xs: allLayouts.xs };
+    }
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  }, []);
+    setLayouts(layoutsToSave);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(layoutsToSave));
+    } catch (e) {
+      console.error("Failed to save portal layout:", e);
+    }
+  };
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveId(null);
-      if (!over || active.id === over.id) return;
-      setItems((prev) => {
-        const oldIndex = prev.findIndex((c) => c.id === active.id);
-        const newIndex = prev.findIndex((c) => c.id === over.id);
-        const next = arrayMove(prev, oldIndex, newIndex);
-        saveOrder(storageKey, next.map((c) => c.id));
-        return next;
-      });
-    },
-    [storageKey]
-  );
-
-  const handleDragCancel = useCallback(() => {
-    setActiveId(null);
-  }, []);
-
-  const activeCard =
-    cards.find((c) => c.id === activeId) ??
-    items.find((c) => c.id === activeId) ??
-    null;
-
-  const overlayColSpan = activeCard ? Math.min(activeCard.colSpan ?? 1, cols) : 1;
-  const overlayGap = cols === 4 ? 24 : 16;
+  let currentCols = 4;
+  if (width < 768) currentCols = 2;
+  else if (width < 996) currentCols = 2;
+  else if (width < 1200) currentCols = 3;
+  
+  const gap = 24;
+  
+  let dynamicRowHeight = 250;
+  if (width > 0) {
+    dynamicRowHeight = (width - gap * (currentCols - 1)) / currentCols;
+  }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      <SortableContext items={items.map((c) => c.id)} strategy={rectSortingStrategy}>
-        {/* Exact grid from the mock: 4 cols on lg, 2 on md, 1 on mobile,
-            fixed 220px row tracks, dense flow so spans pack like the mock. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-[minmax(220px,auto)] grid-flow-dense">
-          {items.map((card) => {
-            const liveCard = cards.find((c) => c.id === card.id) ?? card;
-            return (
-              <SortableCardItem
-                key={card.id}
-                card={liveCard}
-                isDraggingOver={!!activeId && activeId !== card.id}
-                reorderEnabled={reorderEnabled}
-                cols={cols}
-              />
-            );
-          })}
-        </div>
-      </SortableContext>
-
-      <DragOverlay dropAnimation={dropAnimation}>
-        {activeCard ? (
-          <div
-            className="rounded-[2rem] shadow-2xl rotate-1 scale-[1.03] opacity-95 pointer-events-none"
-            style={{
-              width: `${colWidth * overlayColSpan + (overlayColSpan - 1) * overlayGap}px`,
-            }}
-          >
-            {activeCard.content}
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    <div ref={containerRef} className="relative mt-2 w-full">
+      <style>{`
+        .home-layout:not(.is-editing) .react-resizable-handle {
+          display: none !important;
+          pointer-events: none !important;
+        }
+      `}</style>
+      {mounted && layouts && (
+        <ResponsiveGridLayout
+          className={`home-layout ${reorderEnabled ? 'is-editing' : ''}`}
+          width={width}
+          layouts={layouts}
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 4, md: 3, sm: 2, xs: 2, xxs: 2 }}
+          rowHeight={dynamicRowHeight}
+          margin={[gap, gap]}
+          containerPadding={[0, 0]}
+          onLayoutChange={handleLayoutChange}
+          onBreakpointChange={(newBreakpoint) => setActiveBreakpoint(newBreakpoint)}
+          isDraggable={reorderEnabled}
+          isResizable={reorderEnabled}
+          compactType="vertical"
+          useCSSTransforms={true}
+          measureBeforeMount={false}
+          draggableHandle=".drag-handle"
+        >
+          {cards.map((card) => (
+            <div key={card.id} className="group relative @container h-full">
+              <div className={`w-full h-full overflow-y-auto overflow-x-hidden no-scrollbar transition-all duration-150 ${reorderEnabled ? 'ring-2 ring-primary/30 ring-offset-2 ring-offset-base-100 scale-[0.98] pointer-events-none' : 'card-hover'} rounded-[2rem] bg-white`}>
+                {reorderEnabled && (
+                  <button
+                    className="drag-handle absolute top-3 right-3 z-30 p-1.5 rounded-lg bg-white border border-gray-200 shadow-sm text-gray-900 hover:bg-gray-100 cursor-grab active:cursor-grabbing transition-opacity duration-150"
+                  >
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <div className="w-full h-full flex flex-col [&>div]:h-full">
+                  {card.content}
+                </div>
+              </div>
+            </div>
+          ))}
+        </ResponsiveGridLayout>
+      )}
+    </div>
   );
 }

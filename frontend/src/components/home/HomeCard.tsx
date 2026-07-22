@@ -58,7 +58,7 @@ export default function HomeCard({
             }
           : undefined
       }
-      className={`rounded-[2rem] overflow-hidden card-hover flex flex-col p-6 h-full font-inter ${
+      className={`rounded-[2rem] overflow-hidden flex flex-col p-4 @sm:p-5 @md:p-6 h-full font-inter ${
         onClick ? "cursor-pointer" : ""
       } ${className}`}
     >

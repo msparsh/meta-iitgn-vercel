@@ -271,7 +271,7 @@ export default function HomeTab({
         <div
           onMouseEnter={() => { featuredPausedRef.current = true; }}
           onMouseLeave={() => { featuredPausedRef.current = false; }}
-          className="group col-span-1 md:col-span-2 row-span-2 rounded-[2rem] relative overflow-hidden card-hover flex flex-col justify-between p-8 min-h-[460px] h-full font-inter"
+          className="group rounded-[2rem] relative overflow-hidden flex flex-col justify-between p-6 @md:p-8 h-full font-inter"
         >
           {featuredSlides.length === 0 ? (
             <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-primary/10 to-secondary/15 flex items-center justify-center">
@@ -309,8 +309,8 @@ export default function HomeTab({
           )}
 
           {/* Top badges */}
-          <div className="relative z-10 flex justify-between items-start w-full">
-            <div className="flex items-center gap-2 text-white bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-sm font-bold shadow-sm">
+          <div className="relative z-10 flex flex-col @sm:flex-row gap-3 justify-between items-start w-full">
+            <div className="flex items-center gap-2 text-white bg-white/20 backdrop-blur-md px-3 py-1.5 @md:px-4 @md:py-2 rounded-full text-xs @md:text-sm font-bold shadow-sm">
               <Award className="w-4 h-4" /> Featured Article
             </div>
             <div className="flex items-center gap-2">
@@ -318,11 +318,11 @@ export default function HomeTab({
                 type="button"
                 onClick={() => setShowEditFeatured(true)}
                 aria-label="Edit featured articles"
-                className="p-2 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors cursor-pointer"
+                className="p-1.5 @md:p-2 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors cursor-pointer"
               >
-                <Pencil className="w-4 h-4" />
+                <Pencil className="w-3.5 h-3.5 @md:w-4 @md:h-4" />
               </button>
-              <span className="bg-[#e879f9] text-white text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-lg shadow-purple-500/30">
+              <span className="hidden @sm:inline-block bg-[#e879f9] text-white text-[10px] @md:text-xs font-black uppercase tracking-wider px-2 py-1 @md:px-3 @md:py-1.5 rounded-full shadow-lg shadow-purple-500/30">
                 ✨ Special Feature
               </span>
             </div>
@@ -330,34 +330,34 @@ export default function HomeTab({
 
           {/* Bottom content */}
           <div className="relative z-10 mt-auto">
-            <p className="text-blue-300 font-black tracking-widest uppercase text-xs mb-3 flex items-center gap-2">
+            <p className="text-blue-300 font-black tracking-widest uppercase text-[10px] @sm:text-xs mb-2 @md:mb-3 flex items-center gap-2">
               <User className="w-3 h-3" />
               {activeSlide?.location || "Campus"}
             </p>
-            <h2 className="text-white font-display font-black text-6xl md:text-7xl leading-none tracking-tight mb-6 group-hover:-translate-y-2 transition-transform drop-shadow-lg">
+            <h2 className="text-white font-display font-black text-3xl @xs:text-4xl @sm:text-5xl @md:text-6xl @lg:text-7xl leading-none tracking-tight mb-4 @md:mb-6 group-hover:-translate-y-2 transition-transform drop-shadow-lg line-clamp-3">
               {activeSlide?.title || "Campus Article"}
             </h2>
             {activeTarget ? (
               <Link
                 href={activeTarget}
-                className="inline-flex items-center gap-2 text-gray-900 font-black bg-white hover:bg-gray-100 px-6 py-3.5 rounded-full transition-colors shadow-lg"
+                className="inline-flex items-center gap-2 text-gray-900 font-black bg-white hover:bg-gray-100 px-4 py-2.5 @md:px-6 @md:py-3.5 text-xs @md:text-sm rounded-full transition-colors shadow-lg"
               >
-                Read <ArrowRight className="w-4 w-4" />
+                Read <ArrowRight className="w-3 h-3 @md:w-4 @md:h-4" />
               </Link>
             ) : (
               <button
                 type="button"
                 onClick={() => setShowEditFeatured(true)}
-                className="inline-flex items-center gap-2 text-gray-900 font-black bg-white hover:bg-gray-100 px-6 py-3.5 rounded-full transition-colors shadow-lg cursor-pointer"
+                className="inline-flex items-center gap-2 text-gray-900 font-black bg-white hover:bg-gray-100 px-4 py-2.5 @md:px-6 @md:py-3.5 text-xs @md:text-sm rounded-full transition-colors shadow-lg cursor-pointer"
               >
-                Read <ArrowRight className="w-4 w-4" />
+                Read <ArrowRight className="w-3 h-3 @md:w-4 @md:h-4" />
               </button>
             )}
           </div>
 
           {/* Slide dots (bottom-right) */}
           {featuredSlides.length > 0 && (
-            <div className="absolute bottom-8 right-8 z-10 flex gap-2">
+            <div className="hidden @sm:flex absolute bottom-8 right-8 z-10 gap-2">
               {featuredSlides.map((_, index) => (
                 <button
                   key={`featured-dot-${index}`}
@@ -392,16 +392,16 @@ export default function HomeTab({
             </span>
           }
         >
-          <div className="flex flex-col gap-3 flex-1">
+          <div className="dynamic-list-container flex flex-col gap-3 flex-1 overflow-hidden">
             {popularPages.length > 0 ? (
               popularPages.slice(0, 5).map((page, i) => (
                 <Link
                   key={page.page_id}
                   href={`/wiki/${(page.metadata as any)?.category || "campus"}/${page.slug}`}
-                  className="bg-white/70 hover:bg-white p-4 rounded-2xl flex justify-between items-center transition-colors shadow-sm"
+                  className={`dyn-flex-${i+1 > 1 ? i+1 : 1} bg-white/70 hover:bg-white p-3 @sm:p-4 rounded-2xl flex-col @sm:flex-row justify-between items-start @sm:items-center gap-1.5 @sm:gap-0 transition-colors shadow-sm`}
                 >
-                  <span className="font-bold text-gray-800 truncate">{page.title}</span>
-                  <span className="flex items-center gap-2 shrink-0 ml-2 text-xs text-gray-500 font-bold">
+                  <span className="font-bold text-gray-800 text-sm @sm:text-base truncate w-full @sm:w-auto">{page.title}</span>
+                  <span className="flex items-center gap-2 shrink-0 text-[10px] @sm:text-xs text-gray-500 font-bold">
                     <Eye className="h-3 w-3" />
                     {Number(page.view_count ?? 0).toLocaleString()}
                     <span className="text-pink-400">#{i + 1}</span>
@@ -428,26 +428,26 @@ export default function HomeTab({
           footer={
             <button
               onClick={() => setShowAllNew(true)}
-              className="mt-4 w-full font-black text-blue-700 bg-white hover:bg-blue-50 py-3.5 rounded-xl transition-colors text-sm shadow-sm cursor-pointer"
+              className="mt-3 @sm:mt-4 w-full font-black text-blue-700 bg-white hover:bg-blue-50 py-2.5 @sm:py-3.5 rounded-xl transition-colors text-[10px] @sm:text-sm shadow-sm cursor-pointer"
             >
               VIEW ALL NEW PAGES
             </button>
           }
         >
-          <div className="flex flex-col gap-4 flex-1">
+          <div className="dynamic-list-container flex flex-col gap-4 flex-1 overflow-hidden">
             {newPages.length === 0 ? (
               <p className="text-xs text-gray-500 py-3">No new pages created yet.</p>
             ) : (
-              newPages.slice(0, 3).map((page) => (
+              newPages.slice(0, 4).map((page, i) => (
                 <Link
                   key={page.page_id}
                   href={`/wiki/${(page.metadata as any)?.category || "campus"}/${page.slug}`}
-                  className="group/item bg-white/50 p-4 rounded-2xl hover:bg-white transition-colors block"
+                  className={`dyn-block-${i+1 > 1 ? i+1 : 1} group/item bg-white/50 p-3 @sm:p-4 rounded-2xl hover:bg-white transition-colors block`}
                 >
-                  <h4 className="font-bold text-gray-800 group-hover/item:text-blue-600 transition-colors truncate">
+                  <h4 className="font-bold text-gray-800 group-hover/item:text-blue-600 transition-colors truncate text-sm @sm:text-base">
                     {page.title || "Untitled"}
                   </h4>
-                  <p className="text-xs text-gray-500 mt-1 font-medium">
+                  <p className="text-[10px] @sm:text-xs text-gray-500 mt-1 font-medium">
                     Created {getRelativeTime(page.created_at)}
                   </p>
                 </Link>
@@ -478,7 +478,7 @@ export default function HomeTab({
           footer={
             <button
               onClick={() => setShowAllNews(true)}
-              className="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1 mt-auto group/link hover:text-amber-900 cursor-pointer"
+              className="text-[10px] @sm:text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1 mt-auto group/link hover:text-amber-900 cursor-pointer"
             >
               MORE CAMPUS NEWS{" "}
               <ArrowRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
@@ -489,7 +489,7 @@ export default function HomeTab({
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/40 rounded-full blur-2xl pointer-events-none" />
           <div className="relative z-10 flex-1 flex items-center justify-center my-4 bg-white/30 rounded-2xl border border-amber-200/50 overflow-hidden">
             {newsPages.length > 0 ? (
-              <div className="w-full p-3 space-y-2 max-h-full overflow-y-auto no-scrollbar">
+              <div className="dynamic-list-container w-full p-3 space-y-2 max-h-full overflow-hidden">
                 {newsPages.slice(0, 5).map((item, index) => {
                   const Icons = [Sparkles, FlaskConical, Trophy];
                   const IconComponent = Icons[index % Icons.length];
@@ -498,14 +498,14 @@ export default function HomeTab({
                       key={`news-${item.slug || index}`}
                       type="button"
                       onClick={() => setShowAllNews(true)}
-                      className="flex items-start gap-3 rounded-xl bg-white/60 hover:bg-white px-3 py-2 transition-colors w-full text-left"
+                      className={`dyn-flex-${index+1 > 1 ? index+1 : 1} flex-col @sm:flex-row items-start gap-2 @sm:gap-3 rounded-xl bg-white/60 hover:bg-white p-2.5 @sm:px-3 @sm:py-2 transition-colors w-full text-left`}
                     >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/15 text-amber-600">
-                        <IconComponent className="h-4 w-4" />
+                      <div className="w-6 h-6 @sm:w-8 @sm:h-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/15 text-amber-600">
+                        <IconComponent className="h-3 w-3 @sm:h-4 @sm:w-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-gray-800 line-clamp-2">{item.title}</h4>
-                        <span className="text-[10px] text-gray-500 mt-0.5 block font-semibold">
+                        <h4 className="text-[10px] @sm:text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{item.title}</h4>
+                        <span className="text-[9px] @sm:text-[10px] text-gray-500 mt-1 block font-semibold">
                           {getRelativeTime(item.created_at)}
                         </span>
                       </div>
@@ -527,10 +527,10 @@ export default function HomeTab({
     {
       id: "events",
       content: (
-        <div className="bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] rounded-[2rem] p-6 flex flex-col card-hover text-white shadow-lg shadow-indigo-200 h-full font-inter">
-          <div className="flex justify-between items-center mb-4 shrink-0">
-            <h3 className="font-display font-bold text-xl flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-200" />
+        <div className="bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] rounded-[2rem] p-4 @sm:p-5 @md:p-6 flex flex-col text-white shadow-lg shadow-indigo-200 h-full font-inter">
+          <div className="flex justify-between items-center mb-3 @sm:mb-4 shrink-0">
+            <h3 className="font-display font-bold text-lg @sm:text-xl flex items-center gap-2">
+              <Calendar className="w-4 h-4 @sm:w-5 @sm:h-5 text-indigo-200" />
               Upcoming Events
             </h3>
             {upcomingEvents.length > 0 && (
@@ -542,21 +542,21 @@ export default function HomeTab({
 
           <div className="flex-1 flex items-center justify-center my-2 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/10 overflow-hidden">
             {upcomingEvents && upcomingEvents.length > 0 ? (
-              <div className="w-full p-4 space-y-3 overflow-y-auto no-scrollbar">
+              <div className="dynamic-list-container w-full p-4 space-y-3 overflow-hidden">
                 {upcomingEvents.slice(0, 3).map((event, i) => {
                   const dateObj = new Date(event.event_date);
                   const day = isNaN(dateObj.getTime()) ? "" : dateObj.toLocaleDateString("en-US", { day: "numeric" });
                   const month = isNaN(dateObj.getTime()) ? "" : dateObj.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
                   return (
-                    <div key={event.event_id || i} className="flex gap-3 items-start pb-3 border-b border-white/10 last:border-0 last:pb-0">
-                      <div className="flex flex-col items-center justify-center w-10 h-10 shrink-0 rounded-xl bg-white/15 text-white font-black">
-                        <span className="text-xs leading-none">{day}</span>
-                        <span className="text-[8px] leading-none mt-1 opacity-80">{month}</span>
+                    <div key={event.event_id || i} className={`dyn-flex-${i+1 > 1 ? i+1 : 1} gap-2 @sm:gap-3 items-start pb-3 border-b border-white/10 last:border-0 last:pb-0`}>
+                      <div className="flex flex-col items-center justify-center w-8 h-8 @sm:w-10 @sm:h-10 shrink-0 rounded-xl bg-white/15 text-white font-black">
+                        <span className="text-[10px] @sm:text-xs leading-none">{day}</span>
+                        <span className="text-[7px] @sm:text-[8px] leading-none mt-1 opacity-80">{month}</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-black leading-snug line-clamp-1">{event.title}</h4>
-                        <p className="text-[10px] text-indigo-100 font-semibold line-clamp-1 flex items-center gap-1 mt-0.5">
-                          <MapPinned className="w-3 h-3" /> {event.location}
+                        <h4 className="text-[10px] @sm:text-xs font-black leading-snug line-clamp-1">{event.title}</h4>
+                        <p className="text-[9px] @sm:text-[10px] text-indigo-100 font-semibold line-clamp-1 flex items-center gap-1 mt-0.5">
+                          <MapPinned className="w-2.5 h-2.5 @sm:w-3 @sm:h-3" /> {event.location}
                         </p>
                       </div>
                     </div>
@@ -572,9 +572,9 @@ export default function HomeTab({
 
           <button
             onClick={() => setShowEventsManager(true)}
-            className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 py-3.5 text-xs font-black uppercase tracking-wider shadow-md transition-colors cursor-pointer shrink-0"
+            className="mt-3 @sm:mt-4 w-full flex items-center justify-center gap-1.5 @sm:gap-2 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 py-2.5 @sm:py-3.5 text-[10px] @sm:text-xs font-black uppercase tracking-wider shadow-md transition-colors cursor-pointer shrink-0"
           >
-            <CalendarDays className="w-4 h-4" />
+            <CalendarDays className="w-3.5 h-3.5 @sm:w-4 @sm:h-4" />
             VIEW ALL EVENTS
           </button>
         </div>
@@ -593,32 +593,32 @@ export default function HomeTab({
           footer={
             <button
               onClick={() => setShowAllUpdated(true)}
-              className="mt-4 text-xs font-black text-emerald-900 uppercase tracking-wider text-left hover:text-emerald-950 cursor-pointer"
+              className="mt-3 @sm:mt-4 text-[10px] @sm:text-xs font-black text-emerald-900 uppercase tracking-wider text-left hover:text-emerald-950 cursor-pointer"
             >
               VIEW ALL EDITS
             </button>
           }
         >
           <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-emerald-300 rounded-full blur-3xl opacity-50 pointer-events-none" />
-          <div className="relative z-10 flex-1 flex flex-col gap-2 bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
+          <div className="dynamic-list-container relative z-10 flex-1 flex flex-col gap-2 bg-white/20 p-4 rounded-2xl backdrop-blur-sm overflow-hidden">
             {updatedPages.length === 0 ? (
               <p className="text-xs text-emerald-900/70 py-2">No pages updated yet.</p>
             ) : (
-              updatedPages.slice(0, 3).map((page, index) => (
+              updatedPages.slice(0, 4).map((page, index) => (
                 <React.Fragment key={page.page_id}>
-                  <div className="flex justify-between items-center">
+                  <div className={`dyn-flex-${index+1 > 1 ? index+1 : 1} flex-col @sm:flex-row justify-between items-start @sm:items-center gap-1 @sm:gap-0`}>
                     <Link
                       href={`/wiki/${(page.metadata as any)?.category || "campus"}/${page.slug}`}
-                      className="font-bold text-emerald-950 text-sm hover:text-emerald-800 truncate transition-colors"
+                      className="font-bold text-emerald-950 text-xs @sm:text-sm hover:text-emerald-800 truncate transition-colors w-full @sm:w-auto"
                     >
                       {page.title || "Untitled"}
                     </Link>
-                    <p className="text-[10px] text-emerald-800 font-bold shrink-0 ml-2">
+                    <p className="text-[9px] @sm:text-[10px] text-emerald-800 font-bold shrink-0">
                       {getRelativeTime(page.updated_at)}
                     </p>
                   </div>
-                  {index < Math.min(updatedPages.length, 3) - 1 && (
-                    <div className="h-px w-full bg-emerald-700/10" />
+                  {index < Math.min(updatedPages.length, 4) - 1 && (
+                    <div className={`dyn-block-${index+1 > 1 ? index+1 : 1} h-px w-full bg-emerald-700/10`} />
                   )}
                 </React.Fragment>
               ))
@@ -632,20 +632,20 @@ export default function HomeTab({
     {
       id: "random-page",
       content: (
-        <div className="bg-gradient-to-tr from-[#7dd3fc] via-[#e879f9] to-[#fde047] rounded-[2rem] p-1.5 card-hover h-full font-inter">
-          <div className="bg-white/95 backdrop-blur-xl w-full h-full rounded-[1.6rem] p-6 flex flex-col justify-between">
+        <div className="bg-gradient-to-tr from-[#7dd3fc] via-[#e879f9] to-[#fde047] rounded-[2rem] p-1.5 h-full font-inter">
+          <div className="bg-white/95 backdrop-blur-xl w-full h-full rounded-[1.6rem] p-4 @sm:p-6 flex flex-col justify-between">
             <div>
-              <h3 className="font-display font-bold text-xl flex items-center gap-2 text-gray-900 mb-3">
-                <Dices className="w-6 h-6 text-fuchsia-500" /> Random Page
+              <h3 className="font-display font-bold text-lg @sm:text-xl flex items-center gap-2 text-gray-900 mb-2 @sm:mb-3">
+                <Dices className="w-5 h-5 @sm:w-6 @sm:h-6 text-fuchsia-500" /> Random Page
               </h3>
-              <p className="text-sm text-gray-600 font-medium leading-relaxed">
+              <p className="text-[10px] @sm:text-sm text-gray-600 font-medium leading-relaxed">
                 Jump into a fresh article from the wiki and discover something new around campus.
               </p>
             </div>
             <button
               type="button"
               onClick={handleRandomPage}
-              className="mt-4 w-full font-black text-white bg-gray-900 hover:bg-black py-3.5 rounded-xl transition-transform active:scale-95 text-sm shadow-xl shadow-gray-900/20 cursor-pointer"
+              className="mt-3 @sm:mt-4 w-full font-black text-white bg-gray-900 hover:bg-black py-2.5 @sm:py-3.5 rounded-xl transition-transform active:scale-95 text-[10px] @sm:text-sm shadow-xl shadow-gray-900/20 cursor-pointer"
             >
               Open a random page
             </button>
@@ -659,12 +659,12 @@ export default function HomeTab({
       id: "pending-pages",
       colSpan: 2,
       content: (
-        <div className="bg-gray-50 rounded-[2rem] p-6 flex flex-col md:flex-row items-center justify-between card-hover border-2 border-gray-100 gap-6 h-full font-inter">
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="font-display font-bold text-xl flex items-center justify-center md:justify-start gap-2 text-gray-900 mb-2">
-              <Clock className="h-5 w-5 text-gray-400" /> Pending Review
+        <div className="bg-gray-50 rounded-[2rem] p-4 @sm:p-6 flex flex-col @md:flex-row items-center justify-between border-2 border-gray-100 gap-4 @md:gap-6 h-full font-inter">
+          <div className="flex-1 text-center @md:text-left">
+            <h3 className="font-display font-bold text-lg @sm:text-xl flex items-center justify-center @md:justify-start gap-2 text-gray-900 mb-1.5 @sm:mb-2">
+              <Clock className="h-4 w-4 @sm:h-5 @sm:w-5 text-gray-400" /> Pending Review
             </h3>
-            <p className="text-gray-500 text-sm font-medium">
+            <p className="text-gray-500 text-[10px] @sm:text-sm font-medium">
               {pendingPages.length > 0
                 ? `${pendingPages.length} page${pendingPages.length === 1 ? "" : "s"} pending your review.`
                 : "No pending pages currently require your attention."}
@@ -672,7 +672,7 @@ export default function HomeTab({
           </div>
           <button
             onClick={() => setShowAllPending(true)}
-            className="w-full md:w-auto font-black text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 py-3.5 px-8 rounded-xl transition-all active:scale-95 text-sm shadow-sm whitespace-nowrap cursor-pointer"
+            className="w-full @md:w-auto font-black text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 py-2.5 @sm:py-3.5 px-6 @sm:px-8 rounded-xl transition-all active:scale-95 text-[10px] @sm:text-sm shadow-sm whitespace-nowrap cursor-pointer"
           >
             Review Pending Changes
           </button>
@@ -685,24 +685,24 @@ export default function HomeTab({
       id: "quick-stats",
       colSpan: 2,
       content: (
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-[2rem] p-6 flex items-center justify-between card-hover text-white overflow-hidden relative h-full font-inter">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-[2rem] p-6 flex items-center justify-between text-white overflow-hidden relative h-full font-inter">
           <svg viewBox="0 0 200 100" className="absolute inset-0 w-full h-full opacity-10" preserveAspectRatio="none">
             <path d="M0 50 Q 50 10, 100 50 T 200 50" fill="none" stroke="white" strokeWidth="2" />
             <path d="M0 70 Q 50 30, 100 70 T 200 70" fill="none" stroke="white" strokeWidth="1" />
           </svg>
 
-          <div className="relative z-10 flex gap-8 items-center w-full justify-around">
+          <div className="relative z-10 flex flex-col @sm:flex-row gap-4 @sm:gap-8 items-center w-full justify-around">
             <div className="text-center">
-              <p className="text-white font-bold text-xs uppercase tracking-widest mb-1">Total Articles</p>
-              <p className="font-display font-black text-4xl text-white">
+              <p className="text-white font-bold text-[10px] @sm:text-xs uppercase tracking-widest mb-1">Total Articles</p>
+              <p className="font-display font-black text-3xl @sm:text-4xl text-white">
                 {totalPagesCount !== null ? totalPagesCount.toLocaleString() : "…"}
               </p>
             </div>
-            <div className="w-px h-12 bg-gray-700" />
+            <div className="w-12 h-px @sm:w-px @sm:h-12 bg-gray-700 shrink-0" />
             <div className="text-center">
-              <p className="text-white font-bold text-xs uppercase tracking-widest mb-1">Categories</p>
+              <p className="text-white font-bold text-[10px] @sm:text-xs uppercase tracking-widest mb-1">Categories</p>
               <div className="flex items-center justify-center gap-2">
-                <p className="font-display font-black text-4xl text-[#34d399]">{categoriesCount}</p>
+                <p className="font-display font-black text-3xl @sm:text-4xl text-[#34d399]">{categoriesCount}</p>
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34d399] opacity-75" />
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-[#34d399]" />
@@ -720,6 +720,35 @@ export default function HomeTab({
 
   return (
     <>
+      {/* ── Dynamic Height Queries for Cards ───────────────────────────────── */}
+      <style>{`
+        .dynamic-list-container {
+          container-type: size;
+          min-height: 0;
+          height: 100%;
+        }
+        
+        /* Flex items */
+        .dyn-flex-2 { display: none !important; }
+        @container (min-height: 130px) { .dyn-flex-2 { display: flex !important; } }
+        .dyn-flex-3 { display: none !important; }
+        @container (min-height: 190px) { .dyn-flex-3 { display: flex !important; } }
+        .dyn-flex-4 { display: none !important; }
+        @container (min-height: 260px) { .dyn-flex-4 { display: flex !important; } }
+        .dyn-flex-5 { display: none !important; }
+        @container (min-height: 330px) { .dyn-flex-5 { display: flex !important; } }
+
+        /* Block items */
+        .dyn-block-2 { display: none !important; }
+        @container (min-height: 130px) { .dyn-block-2 { display: block !important; } }
+        .dyn-block-3 { display: none !important; }
+        @container (min-height: 190px) { .dyn-block-3 { display: block !important; } }
+        .dyn-block-4 { display: none !important; }
+        @container (min-height: 260px) { .dyn-block-4 { display: block !important; } }
+        .dyn-block-5 { display: none !important; }
+        @container (min-height: 330px) { .dyn-block-5 { display: block !important; } }
+      `}</style>
+      
       {/* ── Mountain Hero Banner ───────────────────────────────────────────── */}
       <div className="relative w-full h-[85vh] lg:h-dvh min-h-125 hidden md:flex flex-col items-center justify-center text-center p-8 bg-primary overflow-hidden select-none">
 
@@ -775,7 +804,7 @@ export default function HomeTab({
       </div>
 
       {/* ── Highlights Feed ────────────────────────────────────────────────── */}
-      <div id="right-highlights-feed" className="p-4 pb-28 md:p-6 lg:p-8 bg-transparent space-y-6">
+      <div id="right-highlights-feed" className="p-4 pb-28 md:p-6 lg:p-8 bg-transparent space-y-6 select-none">
         {/* ── Card visibility preferences ──────────────────────────────────── */}
         <div>
           <button
