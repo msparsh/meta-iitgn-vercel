@@ -20,7 +20,6 @@ import {
   Eye,
   SlidersHorizontal,
   RefreshCw,
-  User,
   Users,
   Pencil,
 } from "lucide-react";
@@ -306,37 +305,30 @@ export default function HomeTab({
 
           {/* Top badges */}
           <div className="relative z-10 flex flex-col @sm:flex-row gap-3 justify-between items-start w-full">
-            <div className="flex items-center gap-2 text-white bg-white/20 backdrop-blur-md px-3 py-1.5 @md:px-4 @md:py-2 rounded-full text-xs @md:text-sm font-bold shadow-sm">
-              <Award className="w-4 h-4" /> Featured Article
+            <div className="badge badge-primary badge-lg gap-2 text-primary-content font-black">
+              <Award className="w-4 h-4" /> {activeSlide?.tag || "Featured"}
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowEditFeatured(true)}
                 aria-label="Edit featured articles"
-                className="p-1.5 @md:p-2 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 transition-colors cursor-pointer"
+                className="btn btn-primary btn-circle btn-sm shadow-lg"
               >
                 <Pencil className="w-3.5 h-3.5 @md:w-4 @md:h-4" />
               </button>
-              <span className="hidden @sm:inline-block bg-[#e879f9] text-white text-[10px] @md:text-xs font-black uppercase tracking-wider px-2 py-1 @md:px-3 @md:py-1.5 rounded-full shadow-lg shadow-purple-500/30">
-                ✨ Special Feature
-              </span>
             </div>
           </div>
 
           {/* Bottom content */}
           <div className="relative z-10 mt-auto">
-            <p className="text-blue-300 font-black tracking-widest uppercase text-[10px] @sm:text-xs mb-2 @md:mb-3 flex items-center gap-2">
-              <User className="w-3 h-3" />
-              {activeSlide?.location || "Campus"}
-            </p>
             <h2 className="text-white font-display font-black text-3xl @xs:text-4xl @sm:text-5xl @md:text-6xl @lg:text-7xl leading-none tracking-tight mb-4 @md:mb-6 group-hover:-translate-y-2 transition-transform drop-shadow-lg line-clamp-3">
               {activeSlide?.title || "Campus Article"}
             </h2>
             {activeTarget ? (
               <Link
                 href={activeTarget}
-                className="inline-flex items-center gap-2 text-gray-900 font-black bg-white hover:bg-gray-100 px-4 py-2.5 @md:px-6 @md:py-3.5 text-xs @md:text-sm rounded-full transition-colors shadow-lg"
+                className="btn btn-primary btn-sm @md:btn-md shadow-lg"
               >
                 Read <ArrowRight className="w-3 h-3 @md:w-4 @md:h-4" />
               </Link>
@@ -344,7 +336,7 @@ export default function HomeTab({
               <button
                 type="button"
                 onClick={() => setShowEditFeatured(true)}
-                className="inline-flex items-center gap-2 text-gray-900 font-black bg-white hover:bg-gray-100 px-4 py-2.5 @md:px-6 @md:py-3.5 text-xs @md:text-sm rounded-full transition-colors shadow-lg cursor-pointer"
+                className="btn btn-primary btn-sm @md:btn-md shadow-lg cursor-pointer"
               >
                 Read <ArrowRight className="w-3 h-3 @md:w-4 @md:h-4" />
               </button>
@@ -970,3 +962,4 @@ export default function HomeTab({
     </>
   );
 }
+
