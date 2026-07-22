@@ -43,6 +43,10 @@ router.use("/competitions", CompetitionsRouter);
 // Interview Feed Posts
 router.use("/interviews", InterviewPostsRouter);
 
+// Sync Check direct endpoint
+import { getFeedSyncCheck } from "./controllers/interviewPosts.js";
+router.get("/feed/sync-check", getFeedSyncCheck);
+
 // Settings
 router.use("/settings", SettingsRouter);
 

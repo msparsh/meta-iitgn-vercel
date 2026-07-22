@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import Avatar from "@/components/helpers/Avatar";
 import InterviewMediaSlider from "./InterviewMediaSlider";
@@ -8,6 +8,7 @@ import InterviewVideoPlayer from "./InterviewVideoPlayer";
 import { InterviewPost, toggleLikeInterviewPost, approveInterviewPost, toggleFeatureInterviewPost, deleteInterviewPost } from "@/api/interviews";
 import { useAuth } from "@/hooks/useAuth";
 import { Heart, Share2, Building2, Briefcase, Clock, CheckCircle2, Star, Trash2 } from "lucide-react";
+import { useFeedStore } from "@/store/useFeedStore";
 
 interface InterviewPostCardProps {
   post: InterviewPost;
@@ -17,6 +18,9 @@ interface InterviewPostCardProps {
 
 export default function InterviewPostCard({ post, onPostUpdated, onSelectFeatured }: InterviewPostCardProps) {
   const { user: currentUser } = useAuth();
+  const markAsRead = useFeedStore((state) => state.markAsRead);
+  const cardRef = useRef<HTMLElement | null>(null);
+
   const [isLiked, setIsLiked] = useState<boolean>(!!post.isLiked);
   const [likesCount, setLikesCount] = useState<number>(post.likes_count || 0);
   const [isLiking, setIsLiking] = useState(false);
@@ -25,6 +29,37 @@ export default function InterviewPostCard({ post, onPostUpdated, onSelectFeature
   const [isFeatured, setIsFeatured] = useState(post.featured);
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "moderator";
+
+  useEffect(() => {
+    if (!post.post_id) return;
+
+    let timer: NodeJS.Timeout | null = null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          timer = setTimeout(() => {
+            markAsRead(post.post_id);
+          }, 2500);
+        } else {
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [post.post_id, markAsRead]);
 
   const handleLike = async () => {
     if (!currentUser) {
@@ -117,7 +152,7 @@ export default function InterviewPostCard({ post, onPostUpdated, onSelectFeature
     : post.content.slice(0, 280) + "...";
 
   return (
-    <article className="rounded-3xl border border-base-200 bg-base-100 p-0.5 sm:p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col gap-2">
+    <article ref={cardRef} className="rounded-3xl border border-base-200 bg-base-100 p-0.5 sm:p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col gap-2">
       {/* Top Author Bar */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 p-3">

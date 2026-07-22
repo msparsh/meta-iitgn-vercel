@@ -38,8 +38,21 @@ export const getInterviews = async (params: {
   limit?: number;
   tag?: string;
   search?: string;
+  cursor?: number;
 } = {}) => {
   const response = await api.get('/interviews', { params, withCredentials: true });
+  return response.data;
+};
+
+export interface FeedSyncCheckData {
+  version: string;
+  latestPostId: number;
+  totalPosts: number;
+  updatedAt: string;
+}
+
+export const getFeedSyncCheck = async (): Promise<{ success: boolean; data: FeedSyncCheckData; version: string; latestPostId: number; totalPosts: number; updatedAt: string }> => {
+  const response = await api.get('/feed/sync-check', { withCredentials: true });
   return response.data;
 };
 

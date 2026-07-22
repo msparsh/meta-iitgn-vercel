@@ -37,40 +37,13 @@ export class WikiDexie extends Dexie {
   github_repos!:          Table<GithubReposCache, string>;
   /** Upcoming contests cached from contest-hive API. 4 h TTL. */
   competitions_contests!: Table<CompetitionContestCache, string>;
+  feed_pages!:            Table<any, string>;
+  read_posts!:            Table<any, number>;
 
   constructor() {
     super('WikiDB');
 
-    // ---- v3 ----
-    this.version(3).stores({
-      bookmarks:    'id',
-      news:         'id',
-      contributors: 'id',
-      pendingpages: 'id',
-      updatedpages: 'id',
-      meta:         'key',
-      cachedpages:  'slug',
-      featured:     'id',
-      popular:      'id',
-      events:       'id',
-    });
-
-    // ---- v4 ---- (removed contributors store)
-    this.version(4).stores({
-      bookmarks:    'id',
-      news:         'id',
-      pendingpages: 'id',
-      updatedpages: 'id',
-      meta:         'key',
-      cachedpages:  'slug',
-      featured:     'id',
-      popular:      'id',
-      events:       'id',
-      contributors: null, // explicitly drop
-    });
-
-    // ---- v5 ---- (add competition caches)
-    this.version(5).stores({
+    this.version(1).stores({
       bookmarks:              'id',
       news:                   'id',
       pendingpages:           'id',
@@ -82,6 +55,8 @@ export class WikiDexie extends Dexie {
       events:                 'id',
       github_repos:           'cache_key',
       competitions_contests:  'cache_key',
+      feed_pages:             'key',
+      read_posts:             'postId',
     });
   }
 }

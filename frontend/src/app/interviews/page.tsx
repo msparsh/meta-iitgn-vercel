@@ -1,28 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import Avatar from "@/components/helpers/Avatar";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  getInterviews,
-  getFeaturedInterviews,
-  InterviewPost,
-} from "@/api/interviews";
+import { InterviewPost } from "@/api/interviews";
 import InterviewPostCard from "@/components/interviews/InterviewPostCard";
 import UserStatsCard from "@/components/interviews/UserStatsCard";
 import CreateInterviewModal from "@/components/interviews/CreateInterviewModal";
 import FeaturedPostOverlay from "@/components/interviews/FeaturedPostOverlay";
+import { useFeedStore } from "@/store/useFeedStore";
 import {
   Plus,
-  Sparkles,
   Search,
-  Building2,
   Briefcase,
   Star,
   Loader2,
   MessageSquare,
-  TrendingUp,
   Award,
   Heart,
   ArrowUpRight,
@@ -45,16 +39,25 @@ const FILTER_TAGS = [
 export default function InterviewFeedPage() {
   const { user: currentUser } = useAuth();
 
-  // State
-  const [posts, setPosts] = useState<InterviewPost[]>([]);
-  const [featuredPosts, setFeaturedPosts] = useState<InterviewPost[]>([]);
-  const [selectedTag, setSelectedTag] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingFeed, setLoadingFeed] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [loadingFeatured, setLoadingFeatured] = useState(true);
+  // Zustand Store selectors
+  const posts = useFeedStore((state) => state.posts);
+  const featuredPosts = useFeedStore((state) => state.featuredPosts);
+  const selectedTag = useFeedStore((state) => state.selectedTag);
+  const searchQuery = useFeedStore((state) => state.searchQuery);
+  const hasMore = useFeedStore((state) => state.hasMore);
+  const loadingFeed = useFeedStore((state) => state.loadingFeed);
+  const loadingMore = useFeedStore((state) => state.loadingMore);
+  const loadingFeatured = useFeedStore((state) => state.loadingFeatured);
+
+  const setSelectedTag = useFeedStore((state) => state.setSelectedTag);
+  const setSearchQuery = useFeedStore((state) => state.setSearchQuery);
+  const loadFeed = useFeedStore((state) => state.loadFeed);
+  const loadMore = useFeedStore((state) => state.loadMore);
+  const loadFeatured = useFeedStore((state) => state.loadFeatured);
+  const loadUserStats = useFeedStore((state) => state.loadUserStats);
+
+  // Local Search state for input text (allows debounced updates to the store)
+  const [searchVal, setSearchVal] = useState(searchQuery);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -64,88 +67,21 @@ export default function InterviewFeedPage() {
   // IntersectionObserver Sentinel Ref
   const observerRef = useRef<HTMLDivElement | null>(null);
 
-  // 1. Initial Feed Fetch (Load 12 posts)
-  const fetchInitialPosts = useCallback(async (tag: string, search: string) => {
-    setLoadingFeed(true);
-    setPage(1);
-    try {
-      const res = await getInterviews({
-        page: 1,
-        limit: 12,
-        tag: tag !== "All" ? tag : undefined,
-        search: search || undefined,
-      });
-
-      if (res && res.success) {
-        setPosts(res.posts || []);
-        setHasMore(res.hasMore);
-      }
-    } catch (err) {
-      console.error("Error fetching feed posts:", err);
-      toast.error("Failed to load interview feed.");
-    } finally {
-      setLoadingFeed(false);
-    }
-  }, []);
-
-  // 2. Infinite Scroll Auto Fetch (Load 6 posts per page)
-  const fetchMorePosts = useCallback(async () => {
-    if (loadingMore || !hasMore || loadingFeed) return;
-
-    setLoadingMore(true);
-    const nextPage = page + 1;
-    try {
-      const res = await getInterviews({
-        page: nextPage,
-        limit: 6,
-        tag: selectedTag !== "All" ? selectedTag : undefined,
-        search: searchQuery || undefined,
-      });
-
-      if (res && res.success) {
-        setPosts((prev) => [...prev, ...(res.posts || [])]);
-        setPage(nextPage);
-        setHasMore(res.hasMore);
-      }
-    } catch (err) {
-      console.error("Error fetching more posts:", err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [loadingMore, hasMore, loadingFeed, page, selectedTag, searchQuery]);
-
-  // 3. Fetch Featured Posts (Top 5)
-  const fetchFeatured = useCallback(async () => {
-    setLoadingFeatured(true);
-    try {
-      const res = await getFeaturedInterviews();
-      if (res && res.success) {
-        setFeaturedPosts(res.posts || []);
-      }
-    } catch (err) {
-      console.error("Error fetching featured posts:", err);
-    } finally {
-      setLoadingFeatured(false);
-    }
-  }, []);
-
+  // Initial loads on mount
   useEffect(() => {
-    fetchInitialPosts(selectedTag, searchQuery);
-  }, [selectedTag, fetchInitialPosts]);
-
-  useEffect(() => {
-    fetchFeatured();
-  }, [fetchFeatured]);
+    loadFeed();
+    loadFeatured();
+  }, [loadFeed, loadFeatured]);
 
   // Debounced Search Handler
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchInitialPosts(selectedTag, searchQuery);
+      setSearchQuery(searchVal);
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedTag, fetchInitialPosts]);
+  }, [searchVal, setSearchQuery]);
 
-  // Observer Setup for Infinite Scroll
+  // Observer Setup for Prefetching Infinite Scroll (triggers when reaching 10th post from bottom)
   useEffect(() => {
     const sentinel = observerRef.current;
     if (!sentinel) return;
@@ -153,18 +89,20 @@ export default function InterviewFeedPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loadingMore && !loadingFeed) {
-          fetchMorePosts();
+          loadMore();
         }
       },
-      { threshold: 0.1, rootMargin: "200px" }
+      { threshold: 0.1, rootMargin: "300px" }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadingFeed, fetchMorePosts]);
+  }, [hasMore, loadingMore, loadingFeed, loadMore, posts.length]);
 
   const handlePostCreated = () => {
     setStatsRefreshTrigger((prev) => prev + 1);
+    loadFeed(true);
+    loadUserStats(true);
   };
 
   return (
@@ -231,15 +169,15 @@ export default function InterviewFeedPage() {
               </button>
             </div>
 
-            {/* Search & Tag Filter Bar */}
+             {/* Search & Tag Filter Bar */}
             <div className="space-y-3">
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-base-content/40" />
                 <input
                   type="text"
                   placeholder="Search by company, role, or keywords..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchVal}
+                  onChange={(e) => setSearchVal(e.target.value)}
                   className="input input-sm input-bordered w-full pl-10 rounded-2xl text-xs bg-base-100"
                 />
               </div>
@@ -288,17 +226,27 @@ export default function InterviewFeedPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {posts.map((post) => (
-                  <InterviewPostCard
-                    key={post.post_id}
-                    post={post}
-                    onPostUpdated={() => fetchInitialPosts(selectedTag, searchQuery)}
-                    onSelectFeatured={(p) => setSelectedFeaturedPost(p)}
-                  />
-                ))}
+                {posts.map((post, index) => {
+                  const isPrefetchSentinel = index === posts.length - 10;
+                  return (
+                    <div key={post.post_id} className="relative">
+                      <InterviewPostCard
+                        post={post}
+                        onPostUpdated={() => loadFeed(true)}
+                        onSelectFeatured={(p) => setSelectedFeaturedPost(p)}
+                      />
+                      {isPrefetchSentinel && (
+                        <div
+                          ref={observerRef}
+                          className="absolute bottom-0 left-0 h-10 w-full pointer-events-none"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
 
-                {/* Sentinel for Infinite Scroll */}
-                <div ref={observerRef} className="py-4 text-center">
+                {/* Sentinel / Loading Indicators */}
+                <div className="py-4 text-center">
                   {loadingMore && (
                     <div className="flex items-center justify-center gap-2 text-xs font-bold text-base-content/60">
                       <Loader2 className="h-4 w-4 animate-spin text-primary" /> Loading more experiences...
@@ -402,10 +350,7 @@ export default function InterviewFeedPage() {
       <CreateInterviewModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onPostCreated={() => {
-          fetchInitialPosts(selectedTag, searchQuery);
-          handlePostCreated();
-        }}
+        onPostCreated={handlePostCreated}
       />
 
       {/* Featured Post Full Story Overlay Modal */}
