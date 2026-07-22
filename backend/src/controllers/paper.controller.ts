@@ -140,12 +140,13 @@ export async function handlePaperGet(req: Request, res: Response) {
     }
 }
 
-export async function handlePaperDelete(req: AuthenticatedRequest, res: Response) {
+export async function handlePaperDelete(req: Request, res: Response) {
+    const authReq = req as AuthenticatedRequest;
     try {
         const paper = await prisma.papers.findFirst({
             where: {
                 paper_id: Number(req.params.id),
-                owner_id: req.user.user_id,
+                owner_id: authReq.user.user_id,
             },
         });
 
@@ -236,10 +237,11 @@ export async function handleDownloadCount(req: Request, res: Response) {
     }
 }
 
-export async function handleUserPapersGet(req: AuthenticatedRequest, res: Response) {
+export async function handleUserPapersGet(req: Request, res: Response) {
+    const authReq = req as AuthenticatedRequest;
     try {
         const papers = await prisma.papers.findMany({
-            where: { owner_id: req.user.user_id },
+            where: { owner_id: authReq.user.user_id },
             orderBy: { created_at: "desc" },
         });
 
@@ -256,7 +258,8 @@ export async function handleUserPapersGet(req: AuthenticatedRequest, res: Respon
     }
 }
 
-export async function handlePaperUpload(req: AuthenticatedRequest, res: Response) {
+export async function handlePaperUpload(req: Request, res: Response) {
+    const authReq = req as AuthenticatedRequest;
     try {
         const {
             courseCode,
@@ -298,7 +301,7 @@ export async function handlePaperUpload(req: AuthenticatedRequest, res: Response
             });
         }
 
-        if (!req.file) {
+        if (!authReq.file) {
             return res.status(400).json({
                 success: false,
                 error: { code: "BAD_REQUEST", message: "PDF file is required" },
@@ -308,7 +311,7 @@ export async function handlePaperUpload(req: AuthenticatedRequest, res: Response
         // uploadToCloudinary always resolves (it falls back to a local path
         // on failure/unconfigured Cloudinary) rather than returning null, so
         // there's no "upload failed" branch to check here.
-        const response = await uploadToCloudinary(req.file.path);
+        const response = await uploadToCloudinary(authReq.file.path);
 
         const paper = await prisma.papers.create({
             data: {
@@ -318,15 +321,15 @@ export async function handlePaperUpload(req: AuthenticatedRequest, res: Response
                 year: Number(year),
                 department,
                 exam_type: parsedExamType,
-                owner_id: req.user.user_id,
-                uploaded_by: req.user.email,
-                uploaded_by_name: req.user.name,
+                owner_id: authReq.user.user_id,
+                uploaded_by: authReq.user.email,
+                uploaded_by_name: authReq.user.name,
                 pdf_url: response.url,
                 cloudinary_id: response.publicId,
-                // req.file.size is bytes on disk pre-upload; uploadToCloudinary
+                // authReq.file.size is bytes on disk pre-upload; uploadToCloudinary
                 // doesn't return a size, and it may delete the local file.
-                file_size: (req.file.size / (1024 * 1024)).toFixed(2) + " MB",
-                file_name: req.file.originalname,
+                file_size: (authReq.file.size / (1024 * 1024)).toFixed(2) + " MB",
+                file_name: authReq.file.originalname,
             },
         });
 

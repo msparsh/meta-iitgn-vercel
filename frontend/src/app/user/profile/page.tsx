@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Navbar from "@/components/navs/Navbar";
 import Sidebar from "@/components/navs/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,7 +16,9 @@ export default function ProfilePage() {
       <div className="flex flex-1">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} currentTier={activeTier} />
         <main className="min-w-0 flex-1 px-4 py-6 pb-16 sm:px-6 lg:px-10">
-          <ProfileContent />
+          <Suspense fallback={<div className="flex justify-center items-center h-64"><span className="loading loading-spinner loading-lg"></span></div>}>
+            <ProfileContent />
+          </Suspense>
         </main>
       </div>
     </div>

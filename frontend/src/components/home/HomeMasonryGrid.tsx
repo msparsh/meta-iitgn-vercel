@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Responsive as ResponsiveGridLayout, Layout, useContainerWidth } from "react-grid-layout";
+import { Responsive as ResponsiveGridLayout, Layout, LayoutItem, ResponsiveLayouts, useContainerWidth } from "react-grid-layout";
 import useSWR from "swr";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -29,7 +29,7 @@ export default function HomeMasonryGrid({
   reorderEnabled = false,
 }: HomeMasonryGridProps) {
   const { width, containerRef, mounted } = useContainerWidth();
-  const [layouts, setLayouts] = useState<ReactGridLayout.Layouts | null>(null);
+  const [layouts, setLayouts] = useState<ResponsiveLayouts | null>(null);
   const [activeBreakpoint, setActiveBreakpoint] = useState<string>("lg");
   const isUserAction = useRef(false);
 
@@ -46,7 +46,7 @@ export default function HomeMasonryGrid({
 
   const buildDefaultLayout = (cols: number) => {
     const occupancy: boolean[][] = [];
-    const layout: Layout[] = [];
+    const layout: LayoutItem[] = [];
 
     const isFree = (x: number, y: number, w: number, h: number) => {
       for (let row = y; row < y + h; row += 1) {
@@ -94,7 +94,7 @@ export default function HomeMasonryGrid({
     return layout;
   };
 
-  const buildLayoutMap = (baseLayouts?: ReactGridLayout.Layouts) => {
+  const buildLayoutMap = (baseLayouts?: ResponsiveLayouts) => {
     const lg = baseLayouts?.lg ?? buildDefaultLayout(4);
     return lockLayoutItems({
       lg,
@@ -105,18 +105,18 @@ export default function HomeMasonryGrid({
     });
   };
 
-  const lockLayoutItems = (layoutGroups: ReactGridLayout.Layouts) =>
+  const lockLayoutItems = (layoutGroups: ResponsiveLayouts) =>
     Object.fromEntries(
       Object.entries(layoutGroups).map(([breakpoint, items]) => [
         breakpoint,
-        items.map((item) => ({
+        items?.map((item) => ({
           ...item,
           static: !reorderEnabled,
           isDraggable: reorderEnabled,
           isResizable: reorderEnabled,
         })),
       ])
-    ) as ReactGridLayout.Layouts;
+    ) as ResponsiveLayouts;
 
   useEffect(() => {
     setLayouts((current) => (current ? lockLayoutItems(current) : current));
@@ -127,7 +127,7 @@ export default function HomeMasonryGrid({
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      const enforceMax = (layoutArray: Layout[], cols = 4) =>
+      const enforceMax = (layoutArray: LayoutItem[], cols = 4) =>
         layoutArray.map((item) => ({ ...item, maxW: cols, maxH: 4 }));
 
       if (saved) {
@@ -136,7 +136,7 @@ export default function HomeMasonryGrid({
         if (Array.isArray(parsed)) {
           setLayouts(buildLayoutMap({ lg: enforceMax(parsed) }));
         } else {
-          const enforcedParsed: ReactGridLayout.Layouts = {};
+          const enforcedParsed: ResponsiveLayouts = {};
           Object.keys(parsed).forEach(key => {
             enforcedParsed[key] = enforceMax(parsed[key], key === "lg" ? 4 : 4);
           });
@@ -148,7 +148,7 @@ export default function HomeMasonryGrid({
         if (Array.isArray(parsed)) {
           setLayouts(buildLayoutMap({ lg: enforceMax(parsed) }));
         } else {
-          const enforcedParsed: ReactGridLayout.Layouts = {};
+          const enforcedParsed: ResponsiveLayouts = {};
           Object.keys(parsed).forEach(key => {
             enforcedParsed[key] = enforceMax(parsed[key], key === "lg" ? 4 : 4);
           });
@@ -164,7 +164,7 @@ export default function HomeMasonryGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey, globalSetting]);
 
-  const handleLayoutChange = (currentLayout: Layout[], allLayouts: ReactGridLayout.Layouts) => {
+  const handleLayoutChange = (currentLayout: Layout, allLayouts: ResponsiveLayouts) => {
     let layoutsToSave = { ...allLayouts };
     
     // To ensure changes on larger screens dynamically cascade to smaller screens,
@@ -224,13 +224,6 @@ export default function HomeMasonryGrid({
           onBreakpointChange={(bp) => setActiveBreakpoint(bp)}
           onDragStop={() => (isUserAction.current = true)}
           onResizeStop={() => (isUserAction.current = true)}
-          isDraggable={reorderEnabled}
-          isResizable={reorderEnabled}
-          isBounded={!reorderEnabled}
-          compactType="vertical"
-          useCSSTransforms={true}
-          measureBeforeMount={false}
-          draggableHandle={reorderEnabled ? ".drag-handle" : undefined}
         >
           {cards.map((card) => (
             <div key={card.id} className="group relative @container h-full">
