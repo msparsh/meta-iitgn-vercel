@@ -94,6 +94,36 @@ export default function HomeMasonryGrid({
     return layout;
   };
 
+  const buildLayoutMap = (baseLayouts?: ReactGridLayout.Layouts) => {
+    const lg = baseLayouts?.lg ?? buildDefaultLayout(4);
+    return lockLayoutItems({
+      lg,
+      md: baseLayouts?.md ?? buildDefaultLayout(3),
+      sm: baseLayouts?.sm ?? buildDefaultLayout(2),
+      xs: baseLayouts?.xs ?? buildDefaultLayout(2),
+      xxs: baseLayouts?.xxs ?? buildDefaultLayout(2),
+    });
+  };
+
+  const lockLayoutItems = (layoutGroups: ReactGridLayout.Layouts) =>
+    Object.fromEntries(
+      Object.entries(layoutGroups).map(([breakpoint, items]) => [
+        breakpoint,
+        items.map((item) => ({
+          ...item,
+          static: !reorderEnabled,
+          isDraggable: reorderEnabled,
+          isResizable: reorderEnabled,
+        })),
+      ])
+    ) as ReactGridLayout.Layouts;
+
+  useEffect(() => {
+    setLayouts((current) => (current ? lockLayoutItems(current) : current));
+    // Keep drag state in sync when the Customize toggle changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reorderEnabled]);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -104,35 +134,29 @@ export default function HomeMasonryGrid({
         isUserAction.current = true;
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setLayouts({ lg: enforceMax(parsed) });
+          setLayouts(buildLayoutMap({ lg: enforceMax(parsed) }));
         } else {
           const enforcedParsed: ReactGridLayout.Layouts = {};
           Object.keys(parsed).forEach(key => {
             enforcedParsed[key] = enforceMax(parsed[key], key === "lg" ? 4 : 4);
           });
-          setLayouts(enforcedParsed);
+          setLayouts(buildLayoutMap(enforcedParsed));
         }
       } else if (globalSetting?.data) {
         // Use global setting if user has no local layout
         const parsed = typeof globalSetting.data === 'string' ? JSON.parse(globalSetting.data) : globalSetting.data;
         if (Array.isArray(parsed)) {
-          setLayouts({ lg: enforceMax(parsed) });
+          setLayouts(buildLayoutMap({ lg: enforceMax(parsed) }));
         } else {
           const enforcedParsed: ReactGridLayout.Layouts = {};
           Object.keys(parsed).forEach(key => {
             enforcedParsed[key] = enforceMax(parsed[key], key === "lg" ? 4 : 4);
           });
-          setLayouts(enforcedParsed);
+          setLayouts(buildLayoutMap(enforcedParsed));
         }
       } else {
         // Generate default layout if nothing is saved locally or globally
-        setLayouts({
-          lg: buildDefaultLayout(4),
-          md: buildDefaultLayout(3),
-          sm: buildDefaultLayout(2),
-          xs: buildDefaultLayout(2),
-          xxs: buildDefaultLayout(2),
-        });
+        setLayouts(buildLayoutMap());
       }
     } catch (e) {
       console.error("Failed to load portal layout:", e);
@@ -155,7 +179,7 @@ export default function HomeMasonryGrid({
       layoutsToSave = { lg: allLayouts.lg, md: allLayouts.md, sm: allLayouts.sm, xs: allLayouts.xs };
     }
 
-    setLayouts(layoutsToSave);
+    setLayouts(buildLayoutMap(layoutsToSave));
     if (isUserAction.current) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(layoutsToSave));
@@ -187,7 +211,7 @@ export default function HomeMasonryGrid({
       `}</style>
       {mounted && layouts && (
         <ResponsiveGridLayout
-          key={globalSetting ? "has-global" : "no-global"}
+          key={`${globalSetting ? "has-global" : "no-global"}-${reorderEnabled ? "edit" : "view"}`}
           className={`home-layout ${reorderEnabled ? 'is-editing' : ''}`}
           width={width}
           layouts={layouts}
@@ -202,10 +226,11 @@ export default function HomeMasonryGrid({
           onResizeStop={() => (isUserAction.current = true)}
           isDraggable={reorderEnabled}
           isResizable={reorderEnabled}
+          isBounded={!reorderEnabled}
           compactType="vertical"
           useCSSTransforms={true}
           measureBeforeMount={false}
-          draggableHandle=".drag-handle"
+          draggableHandle={reorderEnabled ? ".drag-handle" : undefined}
         >
           {cards.map((card) => (
             <div key={card.id} className="group relative @container h-full">
