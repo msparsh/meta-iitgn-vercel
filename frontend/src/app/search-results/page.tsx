@@ -25,6 +25,7 @@ import {
   CATEGORY_ICON_SET,
   isEmojiIcon,
 } from "@/lib/categoryIcon";
+import { useQuery } from "@tanstack/react-query";
 
 // Tint any CSS color (hex, theme name, …) the same way the category
 // editor does, so icon boxes read consistently across every surface.
@@ -66,9 +67,11 @@ const SearchResultSkeleton = () => (
 );
 
 interface SearchResult {
+  page_id: any;
   title: string;
   path: string;
   slug?: string;
+  content: string;
   category: string;
   description: string;
   type?: string;
@@ -90,8 +93,6 @@ function SearchResultsContent() {
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [category, setCategory] = useState(categoryParam);
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -123,53 +124,42 @@ function SearchResultsContent() {
   // "Open links in new tab" applies to internal search-result links.
   const openInNewTab = localStorage.getItem("wiki_open_new_tab") === "true";
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      setLoading(true);
-      try {
-        const data = await apiService.searchPages(queryParam, 1, 6, category);
-        setResults(data.results || []);
-        setTotal(data.total || 0);
-        setHasMore(data.hasMore || false);
-        setDynamicCategories(data.categories || ["All"]);
-        setCategoryMeta(data.categoryMeta || {});
-        setPage(1);
-      } catch (err) {
-        console.error("Failed to fetch search results:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (queryParam) {
-      fetchResults();
-    } else {
-      setResults([]);
-      setTotal(0);
-      setHasMore(false);
-      setDynamicCategories(["All"]);
-    }
-  }, [queryParam, category]);
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["searchResults", queryParam, category, page],
+    queryFn: () => apiService.searchPages(queryParam, page, 6, category),
+    enabled: !!queryParam,
+  });
 
-  const loadMore = async () => {
-    if (loadingMore) return;
-    setLoadingMore(true);
-    const nextPage = page + 1;
-    try {
-      const data = await apiService.searchPages(queryParam, nextPage, 6, category);
-      setResults((prev) => [...prev, ...(data.results || [])]);
+  const loading = isLoading && page === 1;
+  const loadingMore = isFetching && page > 1;
+
+  useEffect(() => {
+    if (data) {
+      setResults((prev) => {
+        if (page === 1) return data.results || [];
+        const existingIds = new Set(prev.map((r) => r.page_id));
+        const newResults = (data.results || []).filter((r: any) => !existingIds.has(r.page_id));
+        return [...prev, ...newResults];
+      });
       setTotal(data.total || 0);
       setHasMore(data.hasMore || false);
-      setPage(nextPage);
       if (data.categories) {
         setDynamicCategories(data.categories);
       }
       if (data.categoryMeta) {
         setCategoryMeta(data.categoryMeta);
       }
-    } catch (err) {
-      console.error("Failed to fetch more search results:", err);
-    } finally {
-      setLoadingMore(false);
+    }
+  }, [data, page]);
+
+  useEffect(() => {
+    setPage(1);
+    setResults([]);
+  }, [queryParam, category]);
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      setPage((prev) => prev + 1);
     }
   };
 

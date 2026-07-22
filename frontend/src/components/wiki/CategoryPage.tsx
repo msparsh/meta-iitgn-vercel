@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeStore } from "@/store/useHomeStore";
 import { PlusCircle, Pencil } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
 import { apiService } from "@/api";
@@ -39,22 +40,6 @@ interface CategoryPageProps {
 const CATEGORY_VIEW_KEY = "meta_iitgn_category_view";
 const SUBCATEGORY_VIEW_KEY = "meta_iitgn_subcategory_view";
 
-// Module-level cache of a category's loaded article list. The PortalOverlay
-// unmounts CategoryPage whenever the Quick Portal closes, discarding its state,
-// so the cache lives here (not in component state) to survive re-opens. Entries
-// expire after a short TTL so newly created/edited articles still surface
-// without a manual refresh.
-const CATEGORY_ARTICLES_TTL = 2 * 60 * 1000; // 2 minutes
-
-interface CategoryArticlesCacheEntry {
-  articles: Article[];
-  page: number;
-  hasMore: boolean;
-  ts: number;
-}
-
-const categoryArticlesCache = new Map<string, CategoryArticlesCacheEntry>();
-
 const ArticleSkeleton = () => (
   <div className="card card-compact card-border w-full flex flex-col justify-between p-4 md:p-6 bg-base-100 border-base-200 shadow-[0_2px_10px_rgba(0,0,0,0.01)] animate-pulse select-none">
     <div className="space-y-3">
@@ -76,10 +61,8 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
   const category = categories?.find(c => c.slug === categorySlug);
   const childCategories = (categories || []).filter(c => category && c.parent_id === category.category_id);
   const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   // Article-list view (Default / Tiles / Details / Icons S–XL). Persisted to
   // localStorage under a category-page-specific key; hydrated after mount to
@@ -120,62 +103,43 @@ export default function CategoryPage({ categorySlug, embedded = false }: Categor
   // "Add Subcategory" inline form state.
   const [showAddSub, setShowAddSub] = useState(false);
 
-  const loadCategoryArticles = useCallback(async (pageNum = 1, append = false) => {
-    try {
-      if (pageNum === 1) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-      const res = await apiService.getCategoryArticles(categorySlug, { page: pageNum, limit: 6 });
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["categoryArticles", categorySlug, page],
+    queryFn: () => apiService.getCategoryArticles(categorySlug, { page, limit: 6 }),
+    enabled: !!categorySlug,
+  });
 
-      const mapped: Article[] = res.articles.map((art: any) => ({
+  const loading = isLoading && page === 1;
+  const loadingMore = isFetching && page > 1;
+
+  useEffect(() => {
+    if (data && data.articles) {
+      const mapped: Article[] = data.articles.map((art: any) => ({
         slug: art.slug,
         title: art.title,
         icon: art.icon,
         color: art.color
       }));
 
-      setArticles(prev => {
-        const next = append ? [...prev, ...mapped] : mapped;
-        // Persist the freshly loaded list so a later re-open renders instantly
-        // from the cache instead of refetching from the server.
-        categoryArticlesCache.set(categorySlug, {
-          articles: next,
-          page: pageNum,
-          hasMore: res.hasMore,
-          ts: Date.now(),
-        });
-        return next;
+      setArticles((prev) => {
+        if (page === 1) return mapped;
+        const existingSlugs = new Set(prev.map((a) => a.slug));
+        const newArticles = mapped.filter((a) => !existingSlugs.has(a.slug));
+        return [...prev, ...newArticles];
       });
-      setHasMore(res.hasMore);
-      setPage(pageNum);
-    } catch (err) {
-      console.error("Error loading category articles:", err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      setHasMore(data.hasMore);
     }
-  }, [categorySlug]);
+  }, [data, page]);
 
+  // Reset page when category changes
   useEffect(() => {
-    // Reuse a cached article list while it's still fresh so re-opening the same
-    // category — or bouncing back to it from a subcategory — is instant instead
-    // of firing a fresh fetch every time the overlay mounts.
-    const cached = categoryArticlesCache.get(categorySlug);
-    if (cached && Date.now() - cached.ts < CATEGORY_ARTICLES_TTL) {
-      setArticles(cached.articles);
-      setPage(cached.page);
-      setHasMore(cached.hasMore);
-      setLoading(false);
-      return;
-    }
-    loadCategoryArticles(1, false);
-  }, [categorySlug, loadCategoryArticles]);
+    setPage(1);
+    setArticles([]);
+  }, [categorySlug]);
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
-      loadCategoryArticles(page + 1, true);
+      setPage((prev) => prev + 1);
     }
   };
 
