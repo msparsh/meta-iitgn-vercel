@@ -44,10 +44,61 @@ export default function HomeMasonryGrid({
     return null;
   });
 
+  const buildDefaultLayout = (cols: number) => {
+    const occupancy: boolean[][] = [];
+    const layout: Layout[] = [];
+
+    const isFree = (x: number, y: number, w: number, h: number) => {
+      for (let row = y; row < y + h; row += 1) {
+        for (let col = x; col < x + w; col += 1) {
+          if ((occupancy[row] ?? [])[col]) return false;
+        }
+      }
+      return true;
+    };
+
+    const occupy = (x: number, y: number, w: number, h: number) => {
+      for (let row = y; row < y + h; row += 1) {
+        if (!occupancy[row]) occupancy[row] = [];
+        for (let col = x; col < x + w; col += 1) {
+          occupancy[row][col] = true;
+        }
+      }
+    };
+
+    const placeCard = (card: MasonryCardConfig) => {
+      const w = Math.max(1, Math.min(card.colSpan ?? 1, cols));
+      const h = Math.max(1, card.rowSpan ?? 1);
+
+      for (let y = 0; ; y += 1) {
+        for (let x = 0; x <= cols - w; x += 1) {
+          if (!isFree(x, y, w, h)) continue;
+          occupy(x, y, w, h);
+          layout.push({
+            i: card.id,
+            x,
+            y,
+            w,
+            h,
+            minW: 1,
+            maxW: cols,
+            minH: 1,
+            maxH: 4,
+          });
+          return;
+        }
+      }
+    };
+
+    cards.forEach(placeCard);
+    return layout;
+  };
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      const enforceMax = (layoutArray: Layout[]) => layoutArray.map(item => ({ ...item, maxW: 4, maxH: 4 }));
+      const enforceMax = (layoutArray: Layout[], cols = 4) =>
+        layoutArray.map((item) => ({ ...item, maxW: cols, maxH: 4 }));
 
       if (saved) {
         isUserAction.current = true;
@@ -57,7 +108,7 @@ export default function HomeMasonryGrid({
         } else {
           const enforcedParsed: ReactGridLayout.Layouts = {};
           Object.keys(parsed).forEach(key => {
-            enforcedParsed[key] = enforceMax(parsed[key]);
+            enforcedParsed[key] = enforceMax(parsed[key], key === "lg" ? 4 : 4);
           });
           setLayouts(enforcedParsed);
         }
@@ -69,24 +120,19 @@ export default function HomeMasonryGrid({
         } else {
           const enforcedParsed: ReactGridLayout.Layouts = {};
           Object.keys(parsed).forEach(key => {
-            enforcedParsed[key] = enforceMax(parsed[key]);
+            enforcedParsed[key] = enforceMax(parsed[key], key === "lg" ? 4 : 4);
           });
           setLayouts(enforcedParsed);
         }
       } else {
         // Generate default layout if nothing is saved locally or globally
-        const defaultLg = cards.map((card, index) => ({
-          i: card.id,
-          x: (index * 2) % 4,
-          y: index,
-          w: card.colSpan ?? 2,
-          h: card.rowSpan ?? 1,
-          minW: 1,
-          maxW: 4,
-          minH: 1,
-          maxH: 2,
-        }));
-        setLayouts({ lg: defaultLg });
+        setLayouts({
+          lg: buildDefaultLayout(4),
+          md: buildDefaultLayout(3),
+          sm: buildDefaultLayout(2),
+          xs: buildDefaultLayout(2),
+          xxs: buildDefaultLayout(2),
+        });
       }
     } catch (e) {
       console.error("Failed to load portal layout:", e);
