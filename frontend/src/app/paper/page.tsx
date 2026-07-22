@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { apiService } from "@/api";
-import toast from "react-hot-toast";
 import { type Paper } from "@/lib/types";
 import { departments, years } from "@/lib/types";
 
@@ -11,8 +11,8 @@ const Home = () => {
   const { user } = useAuth();
 
   const [papers, setPapers] = useState<Paper[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [department, setDepartment] = useState("");
   const [year, setYear] = useState("");
   const [page, setPage] = useState(1);
@@ -20,45 +20,41 @@ const Home = () => {
   const [totalPapers, setTotalPapers] = useState(0);
   const limit = 8;
 
-  const fetchPapers = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const response = await apiService.getPapers({
-        search,
+  const { data, isLoading } = useQuery({
+    queryKey: ["papers", debouncedSearch, department, year, page],
+    queryFn: () =>
+      apiService.getPapers({
+        search: debouncedSearch,
         department,
         year,
         page,
         limit,
-      });
+      }),
+  });
 
-      if (response.success) {
-        setPapers(response.data.papers);
-        setTotalPages(response.data.totalPages);
-        setTotalPapers(response.data.total);
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load papers");
-    } finally {
-      setLoading(false);
-    }
-  }, [search, department, year, page]);
+  const loading = isLoading;
 
   useEffect(() => {
+    if (data && data.success) {
+      setPapers(data.data.papers);
+      setTotalPages(data.data.totalPages);
+      setTotalPapers(data.data.total);
+    }
+  }, [data]);
+
+  // Debounce search query changes
+  useEffect(() => {
     const handler = setTimeout(() => {
-      setPage(1);
-      fetchPapers();
+      setDebouncedSearch(search);
     }, 400);
 
     return () => clearTimeout(handler);
-  }, [search, department, year]);
+  }, [search]);
 
+  // Reset page to 1 when search or filters change
   useEffect(() => {
-    setTimeout(() => {
-      fetchPapers();
-    }, 10);
-  }, [page]);
+    setPage(1);
+  }, [debouncedSearch, department, year]);
 
   const handleDownload = async (paperId: number, pdfUrl: string) => {
     try {

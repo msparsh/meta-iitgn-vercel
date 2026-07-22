@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { apiService } from "@/api";
-import { Calendar, User as UserIcon, Eye, Pencil, Trash2, ArrowLeft, History, FileText } from "lucide-react";
+import { Calendar, Eye, Pencil, Trash2, ArrowLeft, History, FileText } from "lucide-react";
 import dynamic from "next/dynamic";
 import BottomNavbar from "@/components/navs/BottomNavbar";
 import BlogRevisionsView from "@/components/blog/BlogRevisionsView";
@@ -19,24 +20,7 @@ const BlockNoteReader = dynamic(
   { ssr: false }
 );
 
-interface BlogAuthor {
-  user_id: number;
-  name: string;
-  avatar_url?: string | null;
-}
 
-interface BlogData {
-  blog_id: number;
-  title: string;
-  description?: string | null;
-  slug: string;
-  content?: string | null;
-  created_at: string;
-  view_count: number;
-  original_author_id: number;
-  original_author: BlogAuthor;
-  version?: number | null;
-}
 
 export default function BlogDetailPage() {
   const params = useParams();
@@ -44,15 +28,21 @@ export default function BlogDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [blog, setBlog] = useState<BlogData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
-
   const [editorTheme, setEditorTheme] = useState<"light" | "dark">("light");
   const [showRevisions, setShowRevisions] = useState(false);
   const [showPendingChanges, setShowPendingChanges] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: ["blog", slug],
+    queryFn: () => apiService.getBlog(slug),
+    enabled: !!slug,
+  });
+
+  const blog = data?.success ? data.blog : null;
+  const loading = isLoading;
+  const error = queryError ? ((queryError as any).response?.data?.error || (queryError as any).message || "Failed to load blog post.") : "";
 
   useDocumentTitle(blog?.title ?? (loading ? undefined : "Blog Post Not Found"));
 
@@ -64,25 +54,6 @@ export default function BlogDetailPage() {
       setEditorTheme(isDark ? "dark" : "light");
     }
   }, []);
-
-  useEffect(() => {
-    if (!slug) return;
-    const fetchBlog = async () => {
-      try {
-        setLoading(true);
-        const res = await apiService.getBlog(slug);
-        if (res && res.success) {
-          setBlog(res.blog);
-        }
-      } catch (err: any) {
-        console.error("Error loading blog details:", err);
-        setError(err.response?.data?.error || err.message || "Failed to load blog post.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBlog();
-  }, [slug]);
 
   const triggerDelete = () => {
     setShowDeleteConfirm(true);

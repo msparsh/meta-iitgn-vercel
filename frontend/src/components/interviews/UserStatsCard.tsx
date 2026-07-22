@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import Avatar from "@/components/helpers/Avatar";
 import { useAuth } from "@/hooks/useAuth";
-import { getUserInterviewStats, InterviewUserStats } from "@/api/interviews";
+
 import { Plus, FileText, CheckCircle2, Clock, Heart, LogIn } from "lucide-react";
 import Link from "next/link";
+import { useFeedStore } from "@/store/useFeedStore";
 
 interface UserStatsCardProps {
   onOpenCreateModal: () => void;
@@ -14,28 +15,14 @@ interface UserStatsCardProps {
 
 export default function UserStatsCard({ onOpenCreateModal, refreshTrigger }: UserStatsCardProps) {
   const { user: currentUser } = useAuth();
-  const [stats, setStats] = useState<InterviewUserStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const stats = useFeedStore((state) => state.stats);
+  const loading = useFeedStore((state) => state.loadingStats);
+  const loadUserStats = useFeedStore((state) => state.loadUserStats);
 
   useEffect(() => {
     if (!currentUser) return;
-
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        const res = await getUserInterviewStats();
-        if (res && res.success) {
-          setStats(res.stats);
-        }
-      } catch (err) {
-        console.error("Error fetching interview stats:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, [currentUser, refreshTrigger]);
+    loadUserStats(!!refreshTrigger);
+  }, [currentUser, refreshTrigger, loadUserStats]);
 
   if (!currentUser) {
     return (

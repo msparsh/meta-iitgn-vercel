@@ -82,10 +82,24 @@ function SettingsModalTrigger() {
 }
 
 import { DARK_THEMES } from "@/lib/constants";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Google OAuth client ID must be provided via NEXT_PUBLIC_GOOGLE_CLIENT_ID.
   const googleClientId = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "") as string;
+
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 10 * 60 * 1000, // 10 minutes cache TTL
+            gcTime: 15 * 60 * 1000,    // 15 minutes garbage collection (formerly cacheTime)
+            refetchOnWindowFocus: false, // avoid unwanted network requests on focus
+          },
+        },
+      })
+  );
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem("wiki_daisyui_theme") || "light";
@@ -129,25 +143,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <ProfileProvider>
-          {children}
-          <Toaster
-            position="top-center"
-            containerStyle={{ zIndex: 30000 }}
-            toastOptions={{
-              className: "!bg-base-100 !text-base-content border !border-base-300 rounded-lg shadow-lg font-sans",
-              style: {
-                borderRadius: "8px",
-              },
-            }}
-          />
-          <Suspense fallback={null}>
-            <SettingsModalTrigger />
-          </Suspense>
-        </ProfileProvider>
-      </AuthProvider>
-    </GoogleOAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <AuthProvider>
+          <ProfileProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              containerStyle={{ zIndex: 30000 }}
+              toastOptions={{
+                className: "!bg-base-100 !text-base-content border !border-base-300 rounded-lg shadow-lg font-sans",
+                style: {
+                  borderRadius: "8px",
+                },
+              }}
+            />
+            <Suspense fallback={null}>
+              <SettingsModalTrigger />
+            </Suspense>
+          </ProfileProvider>
+        </AuthProvider>
+      </GoogleOAuthProvider>
+    </QueryClientProvider>
   );
 }

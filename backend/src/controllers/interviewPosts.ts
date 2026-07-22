@@ -27,6 +27,7 @@ export async function getFeedPosts(req: express.Request, res: express.Response) 
     const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 12));
     const tag = req.query.tag ? String(req.query.tag).trim() : null;
     const search = req.query.search ? String(req.query.search).trim() : null;
+    const cursor = req.query.cursor ? Number(req.query.cursor) : null;
 
     const whereCondition: any = {
       approved: true,
@@ -65,7 +66,15 @@ export async function getFeedPosts(req: express.Request, res: express.Response) 
     }
 
     const total = filteredPosts.length;
-    const startIndex = (page - 1) * limit;
+    let startIndex = 0;
+    if (cursor) {
+      const cursorIndex = filteredPosts.findIndex((p) => p.post_id === cursor);
+      if (cursorIndex !== -1) {
+        startIndex = cursorIndex + 1;
+      }
+    } else {
+      startIndex = (page - 1) * limit;
+    }
     const paginatedPosts = filteredPosts.slice(startIndex, startIndex + limit);
 
     // Attach isLiked status if user is authenticated
@@ -87,6 +96,7 @@ export async function getFeedPosts(req: express.Request, res: express.Response) 
     }));
 
     const hasMore = startIndex + limit < total;
+    const nextCursor = paginatedPosts.length > 0 ? paginatedPosts[paginatedPosts.length - 1].post_id : null;
 
     return res.json({
       success: true,
@@ -95,6 +105,7 @@ export async function getFeedPosts(req: express.Request, res: express.Response) 
       page,
       limit,
       hasMore,
+      cursor: nextCursor,
     });
   } catch (err: any) {
     console.error("Error in getFeedPosts:", err);
@@ -530,6 +541,49 @@ export async function deletePost(req: express.Request, res: express.Response) {
     });
   } catch (err: any) {
     console.error("Error in deletePost:", err);
+    return res.status(500).json({
+      success: false,
+      error: { code: "INTERNAL_ERROR", message: err.message },
+    });
+  }
+}
+
+export async function getFeedSyncCheck(req: express.Request, res: express.Response) {
+  try {
+    const stats = await prisma.interview_posts.aggregate({
+      where: {
+        approved: true,
+        deleted_at: null,
+      },
+      _max: {
+        post_id: true,
+        updated_at: true,
+      },
+      _count: {
+        post_id: true,
+      },
+    });
+
+    const totalPosts = stats._count.post_id || 0;
+    const latestPostId = stats._max.post_id || 0;
+    const updatedAt = stats._max.updated_at ? stats._max.updated_at.toISOString() : new Date(0).toISOString();
+    const version = `${new Date(updatedAt).getTime()}_${totalPosts}_${latestPostId}`;
+
+    return res.json({
+      success: true,
+      version,
+      latestPostId,
+      totalPosts,
+      updatedAt,
+      data: {
+        version,
+        latestPostId,
+        totalPosts,
+        updatedAt,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error in getFeedSyncCheck:", err);
     return res.status(500).json({
       success: false,
       error: { code: "INTERNAL_ERROR", message: err.message },

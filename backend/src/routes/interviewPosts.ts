@@ -14,11 +14,13 @@ import {
   approvePost,
   toggleFeaturePost,
   deletePost,
+  getFeedSyncCheck,
 } from "../controllers/interviewPosts.js";
 
 const router = Router();
 
 // Public / Optional Auth routes
+router.get("/sync-check", checkAuthOptional, getFeedSyncCheck);
 router.get("/", checkAuthOptional, getFeedPosts);
 router.get("/featured", checkAuthOptional, getFeaturedPosts);
 
